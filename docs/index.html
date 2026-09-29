@@ -157,18 +157,30 @@
   .trail h2 { font-family: var(--serif); font-weight: 400; font-size: 2rem; margin-bottom: 6px; }
   .trail .sub { color: var(--muted); margin-bottom: 26px; max-width: 60ch; }
   .term {
-    background: #0a0b0e; border: 1px solid var(--rule-solid); border-radius: 12px;
+    background: #0b2942;                    /* deep ocean-navy — same hue as --ink, part of the palette */
+    border: 1px solid rgba(11,41,66,0.25);
+    border-radius: 12px;
     font-family: var(--mono); font-size: 13px; overflow: hidden;
+    box-shadow: 0 20px 50px -24px rgba(11,41,66,0.5);   /* soft ocean-tinted lift */
   }
-  .term-bar { display: flex; gap: 7px; padding: 12px 16px; border-bottom: 1px solid var(--rule); }
+  .term-bar {
+    display: flex; align-items: center; gap: 7px; padding: 12px 16px;
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.10);
+  }
   .term-bar span { width: 11px; height: 11px; border-radius: 50%; }
   .term-bar span:nth-child(1){ background:#ff5f56;} .term-bar span:nth-child(2){ background:#ffbd2e;} .term-bar span:nth-child(3){ background:#27c93f;}
-  .term-body { padding: 18px 20px; line-height: 1.9; }
-  .term-body .p { color: var(--accent); }
-  .term-body .c { color: var(--ink); }
-  .term-body .o { color: var(--muted); }
-  .term-body .hl { color: var(--drift); }
-  .term-body .ok { color: var(--agree); }
+  .term-bar .ttl {
+    margin-left: 10px; font-size: 11px; letter-spacing: 0.06em;
+    color: rgba(233,241,247,0.55); text-transform: none;
+  }
+  .term-body { padding: 20px 22px; line-height: 1.95; color: #dfeaf2; }
+  .term-body > div { white-space: pre-wrap; }
+  .term-body .p  { color: #38d0e8; }          /* bright ocean cyan — prompts/arrows */
+  .term-body .c  { color: #f2f7fb; }          /* near-white — the commands you read */
+  .term-body .o  { color: #8fa8bd; }          /* muted ocean-grey — annotations */
+  .term-body .hl { color: #ff9166; font-weight: 500; }  /* lifted coral — drift, readable on navy */
+  .term-body .ok { color: #4ade80; font-weight: 500; }  /* lifted green — agree/TRUSTED */
 
   footer { border-top: 1px solid var(--rule); padding: 34px 0 70px; color: var(--soft); font-family: var(--mono); font-size: 12px; }
   footer a { color: var(--muted); }
@@ -251,7 +263,7 @@
     <h2 class="reveal">The agent's tool trail</h2>
     <p class="sub reveal">Nova drove three tools in order. The deterministic reconcile and the read-only live check are what the model cannot fake; a fail-closed guard releases the answer only if the model's value matches the reconciled value.</p>
     <div class="term reveal">
-      <div class="term-bar"><span></span><span></span><span></span></div>
+      <div class="term-bar"><span></span><span></span><span></span><span class="ttl">agent.ask — reconcile + live check</span></div>
       <div class="term-body">
         <div><span class="o">$</span> <span class="c">python -m agent.ask "current On-Demand Standard vCPU quota in us-east-1?"</span></div>
         <div><span class="p">→</span> <span class="c">fetch_candidate_facts(service='EC2', fact_type='quota', region='us-east-1')</span> <span class="o">→ 1 row</span></div>
