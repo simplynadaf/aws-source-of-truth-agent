@@ -1,0 +1,24 @@
+{
+  "name": "aws-source-of-truth-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Path One (Sanity Challenge): an agent over a Sanity Context Knowledge Base that answers 'which AWS value is current?' when docs, pricing, and quotas disagree, surfacing both claims with sources.",
+  "scripts": {
+    "check-env": "tsx src/check-env.ts",
+    "list-tools": "tsx src/list-tools.ts",
+    "ask": "tsx src/agent.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/mcp": "^2.0.56",
+    "@ai-sdk/openai": "^4.0.73",
+    "ai": "^7.0.112",
+    "dotenv": "^16.4.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
