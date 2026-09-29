@@ -191,6 +191,8 @@
      motion always show everything. */
   .reveal { opacity: 1; transform: none; }
   .js-motion .reveal { opacity: 0; transform: translateY(16px); }
+  /* the terminal fades only (no slide) so multi-line text never smears mid-animation */
+  .js-motion .term.reveal { transform: none; }
 
   @media (max-width: 760px) {
     .flow { grid-template-columns: 1fr; }
@@ -263,7 +265,7 @@
     <h2 class="reveal">The agent's tool trail</h2>
     <p class="sub reveal">Nova drove three tools in order. The deterministic reconcile and the read-only live check are what the model cannot fake; a fail-closed guard releases the answer only if the model's value matches the reconciled value.</p>
     <div class="term reveal">
-      <div class="term-bar"><span></span><span></span><span></span><span class="ttl">agent.ask — reconcile + live check</span></div>
+      <div class="term-bar"><span></span><span></span><span></span></div>
       <div class="term-body">
         <div><span class="o">$</span> <span class="c">python -m agent.ask "current On-Demand Standard vCPU quota in us-east-1?"</span></div>
         <div><span class="p">→</span> <span class="c">fetch_candidate_facts(service='EC2', fact_type='quota', region='us-east-1')</span> <span class="o">→ 1 row</span></div>
@@ -377,9 +379,11 @@
     document.documentElement.classList.add("js-motion");
     gsap.registerPlugin(ScrollTrigger);
     gsap.set(".reveal", { opacity: 0, y: 16 });
+    gsap.set(".term.reveal", { y: 0 });   // terminal fades only, never slides (avoids text smear)
     gsap.utils.toArray(".reveal").forEach((elm) => {
+      const isTerm = elm.classList.contains("term");
       gsap.to(elm, {
-        opacity: 1, y: 0, duration: 0.6, ease: "power3.out",
+        opacity: 1, y: 0, duration: isTerm ? 0.5 : 0.6, ease: "power3.out",
         scrollTrigger: { trigger: elm, start: "top 92%" }
       });
     });
