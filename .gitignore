@@ -8,3 +8,11 @@ dist/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Internal working notes (kept locally, not part of the public repo)
+PROGRESS.md
+PROJECT-FACTS.md
+KB-BUILD-RUNBOOK.md
+RESEARCH-perception-and-views.md
+SUBMISSION-POST.md
+VERIFIED-*.md

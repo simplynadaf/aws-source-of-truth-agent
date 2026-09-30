@@ -237,24 +237,38 @@ The `reconcile_offline` / `baseline` paths need none of this. Do it to run the L
 ```
 aws-source-of-truth-agent/
 ├── README.md
+├── LICENSE
 ├── requirements.txt              # strands-agents, boto3, python-dotenv
-├── agent/                        # run with `python -m agent.<name>`
+├── .env.example                  # copy to .env and fill in (Bedrock + Sanity Context)
+├── agent/                        # the agent (run with `python -m agent.<name>`)
 │   ├── config.py                 # env loading + retrieval-mode detection
+│   ├── context_mcp.py            # live Sanity Context MCP client (Knowledge Base mode)
 │   ├── sanity_client.py          # credential-free GROQ over the PUBLIC dataset
 │   ├── reconcile.py              # DETERMINISTIC winner: source precedence, then effectiveDate
 │   ├── aws_live.py               # read-only live check (service-quotas, pricing, ec2, rds)
 │   ├── guard.py                  # fail-closed guard + build_deterministic_answer
 │   ├── core.py                   # Strands + Nova Pro agent: 3 tools, ask() with guard + trail
-│   ├── ask.py                    # CLI: python -m agent.ask "question"   (full LLM agent)
+│   ├── ask.py                    # CLI: python -m agent.ask [--json] "question"  (full LLM agent)
 │   ├── reconcile_offline.py      # CLI: deterministic, NO-LLM, NO-token path (judges run this)
-│   └── baseline.py               # CLI: TF-IDF keyword control (proves structure is load-bearing)
+│   ├── baseline.py               # CLI: TF-IDF keyword control (proves structure is load-bearing)
+│   └── import_seed.py            # CLI: import the seed facts into the dataset (write token)
 ├── sanity/
 │   ├── schemaTypes/awsFact.ts    # typed AWS fact (service/factType/region/source/supersedes)
-│   └── seed/aws-facts.ndjson     # 5 real-AWS demo facts; two carry an explicit superseded value
+│   └── seed/aws-facts.ndjson     # real-AWS demo facts; several carry an explicit superseded value
 ├── docs-sources/                 # DEMO: an outdated value (32) vs the current console value (5)
-├── docs/index.html               # the live web viewer (served by GitHub Pages)
-└── tests/test_core.py            # 5 offline unit tests (reconcile + guard); all passing
+├── docs/index.html               # the web viewer
+├── sanity.config.ts              # Sanity Studio config
+├── sanity.cli.ts                 # Sanity CLI config (schema deploy)
+└── tests/test_core.py            # offline unit tests (reconcile + guard + keyword trap); all passing
 ```
+
+> The values in `sanity/seed/` and `docs-sources/` are **clearly-labelled demo data**. Quota codes (e.g. `L-1216C47A`) are real so the agent can live-check them, but the specific numbers are account-dependent, verify live AWS numbers in your own account before relying on them.
+
+---
+
+## 🔐 The Integrity Story (why the model can't fake it)
+
+Strands runs the agent; a deterministic function picks the winner; a guard gates the output.
 
 > The values in `sanity/seed/` and `docs-sources/` are **clearly-labelled demo data**. Quota codes (e.g. `L-1216C47A`) are real so the agent can live-check them, but the specific numbers are account-dependent, verify live AWS numbers in your own account before relying on them.
 

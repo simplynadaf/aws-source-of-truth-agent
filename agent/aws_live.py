@@ -55,7 +55,7 @@ def verify_live(service: str, fact_type: str, region: str, claimed_value: str,
         # --- Quotas / limits via Service Quotas -----------------------------
         if ft in ("quota", "limit") and quota_code:
             sq = boto3.client("service-quotas", region_name=reg)
-            svc_code = "ec2" if svc == "EC2" else "lambda" if svc == "LAMBDA" else svc.lower()
+            svc_code = "ec2" if svc == "EC2" else "lambda" if svc == "LAMBDA" else "ebs" if svc == "EBS" else svc.lower()
             resp = sq.get_service_quota(ServiceCode=svc_code, QuotaCode=quota_code)
             live = resp["Quota"]["Value"]
             live_str = str(int(live)) if float(live).is_integer() else str(live)
