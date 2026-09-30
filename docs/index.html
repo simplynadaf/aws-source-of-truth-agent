@@ -9,122 +9,166 @@
 <meta property="og:description" content="Which AWS number is current? Reconciles conflicting facts to one cited answer, then live-checks AWS. Sanity project 0q5ohtvv." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
   :root{
-    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:rgba(255,255,255,.09);
-    --txt:#e6edf3; --dim:#8b949e; --purple:#a371f7; --purpleD:#7c3aed;
-    --green:#3fb950; --amber:#d29922; --red:#ff7b72; --blue:#79c0ff;
+    --bg:#0a0a12; --panel:#12121c; --panel2:#181826; --line:rgba(255,255,255,.08);
+    --txt:#e8ecf5; --dim:#8b93a7; --purple:#a371f7; --purpleD:#7c3aed;
+    --green:#3fd07f; --amber:#e0a83a; --red:#ff8b82; --blue:#7cc4ff;
   }
   *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
   body{background:var(--bg);color:var(--txt);font-family:Geist,-apple-system,sans-serif;
-    line-height:1.6;padding:0 20px 80px}
-  .wrap{max-width:920px;margin:0 auto}
-  code,kbd,.mono{font-family:'Geist Mono',ui-monospace,monospace}
+    line-height:1.6;padding:0 20px 80px;position:relative;overflow-x:hidden}
+  /* animated aurora background */
+  body::before{content:"";position:fixed;inset:0;z-index:-2;
+    background:
+      radial-gradient(60vw 60vw at 15% 0%, rgba(124,58,237,.18), transparent 60%),
+      radial-gradient(50vw 50vw at 90% 20%, rgba(56,132,255,.12), transparent 60%),
+      radial-gradient(50vw 50vw at 50% 100%, rgba(63,208,127,.08), transparent 60%);
+    animation:drift 18s ease-in-out infinite alternate}
+  @keyframes drift{to{transform:translate3d(0,-30px,0) scale(1.05)}}
+  body::after{content:"";position:fixed;inset:0;z-index:-1;opacity:.35;
+    background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+    background-size:46px 46px;mask-image:radial-gradient(ellipse 80% 60% at 50% 20%,#000,transparent 75%)}
+  .wrap{max-width:900px;margin:0 auto}
+  code,.mono{font-family:'Geist Mono',ui-monospace,monospace}
 
-  /* hero */
-  header{padding:64px 0 28px;text-align:center}
-  .badge{display:inline-block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;
-    color:var(--purple);border:1px solid var(--line);border-radius:999px;padding:6px 14px;margin-bottom:22px}
-  h1{font-size:clamp(30px,5vw,46px);font-weight:700;line-height:1.1;letter-spacing:-.02em}
-  h1 .g{background:linear-gradient(90deg,var(--purple),var(--blue));-webkit-background-clip:text;
-    background-clip:text;-webkit-text-fill-color:transparent}
-  .sub{color:var(--dim);font-size:18px;max-width:620px;margin:18px auto 0}
+  header{padding:70px 0 20px;text-align:center}
+  .badge{display:inline-block;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--purple);border:1px solid rgba(163,113,247,.35);border-radius:999px;
+    padding:6px 15px;margin-bottom:24px;background:rgba(163,113,247,.06);backdrop-filter:blur(6px)}
+  h1{font-size:clamp(32px,5.5vw,52px);font-weight:700;line-height:1.05;letter-spacing:-.025em}
+  h1 .g{background:linear-gradient(100deg,var(--purple),var(--blue) 60%,var(--green));
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{color:var(--dim);font-size:18px;max-width:600px;margin:20px auto 0}
 
-  /* demo-data banner */
-  .note{max-width:920px;margin:26px auto 0;background:rgba(210,153,34,.10);
-    border:1px solid rgba(210,153,34,.35);border-radius:10px;padding:12px 16px;
-    font-size:14px;color:#f0d68a}
-  .note b{color:#ffe08a}
+  .note{max-width:900px;margin:28px auto 0;background:rgba(224,168,58,.09);
+    border:1px solid rgba(224,168,58,.3);border-radius:12px;padding:13px 17px;
+    font-size:13.5px;color:#f0d68a;line-height:1.55}
+  .note b{color:#ffe08a} .note a{color:inherit}
 
-  /* controls */
-  .tool{background:var(--panel);border:1px solid var(--line);border-radius:16px;
-    padding:26px;margin-top:26px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
-  .label{font-size:13px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
-  select{width:100%;background:var(--panel2);color:var(--txt);border:1px solid var(--line);
-    border-radius:10px;padding:14px 16px;font-size:16px;font-family:inherit;cursor:pointer;appearance:none}
-  select:focus{outline:none;border-color:var(--purple)}
-  .runbtn{margin-top:14px;width:100%;background:linear-gradient(90deg,var(--purpleD),var(--purple));
-    color:#fff;border:none;border-radius:10px;padding:14px;font-size:16px;font-weight:600;cursor:pointer}
-  .runbtn:active{transform:translateY(1px)}
+  /* prompt bar */
+  .promptbar{margin-top:30px;position:relative}
+  .pwrap{display:flex;align-items:center;gap:12px;background:var(--panel);
+    border:1px solid var(--line);border-radius:14px;padding:6px 6px 6px 18px;
+    box-shadow:0 20px 60px rgba(0,0,0,.4);transition:border-color .2s}
+  .pwrap:focus-within{border-color:var(--purple);box-shadow:0 0 0 3px rgba(163,113,247,.15),0 20px 60px rgba(0,0,0,.4)}
+  .pwrap .chev{color:var(--green);font-family:'Geist Mono';font-weight:600}
+  #prompt{flex:1;background:none;border:none;color:var(--txt);font-size:16.5px;
+    font-family:inherit;padding:14px 0;outline:none}
+  #prompt::placeholder{color:var(--dim)}
+  .askbtn{background:linear-gradient(100deg,var(--purpleD),var(--purple));color:#fff;
+    border:none;border-radius:10px;padding:12px 22px;font-size:15px;font-weight:600;
+    cursor:pointer;white-space:nowrap;transition:transform .1s,filter .2s}
+  .askbtn:hover{filter:brightness(1.08)} .askbtn:active{transform:translateY(1px)}
+  /* suggestions dropdown */
+  .sugg{position:absolute;left:0;right:0;top:calc(100% + 8px);background:var(--panel);
+    border:1px solid var(--line);border-radius:12px;overflow:hidden;z-index:20;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);display:none}
+  .sugg.show{display:block}
+  .sitem{padding:12px 18px;cursor:pointer;font-size:15px;border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;gap:10px;align-items:center}
+  .sitem:last-child{border-bottom:none}
+  .sitem:hover,.sitem.active{background:var(--panel2)}
+  .sitem .svc{font-family:'Geist Mono';font-size:11px;color:var(--purple);
+    border:1px solid rgba(163,113,247,.3);border-radius:6px;padding:2px 8px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;justify-content:center}
+  .chip{font-size:13px;color:var(--dim);border:1px solid var(--line);border-radius:999px;
+    padding:6px 13px;cursor:pointer;background:rgba(255,255,255,.02);transition:.15s}
+  .chip:hover{color:var(--txt);border-color:var(--purple)}
 
-  /* answer */
-  .answer{margin-top:22px;display:none}
-  .answer.show{display:block;animation:fade .4s ease}
-  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-  .verdict{font-size:20px;font-weight:600;padding:18px 20px;border-radius:12px;border:1px solid var(--line)}
+  /* run panel */
+  .stage{margin-top:26px;display:none}
+  .stage.show{display:block}
+  .pipe{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .pstep{display:flex;align-items:center;gap:12px;padding:9px 0;font-family:'Geist Mono';
+    font-size:13.5px;color:var(--dim);opacity:.4;transition:opacity .3s}
+  .pstep.on{opacity:1;color:var(--txt)}
+  .pstep.done{opacity:1}
+  .ic{width:20px;height:20px;flex:none;display:grid;place-items:center}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+  .spin{width:15px;height:15px;border:2px solid rgba(163,113,247,.3);border-top-color:var(--purple);
+    border-radius:50%;animation:sp .7s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .chk{color:var(--green);font-weight:700}
+  .pstep .lbl b{color:var(--blue);font-weight:600}
+  .pstep .k{color:var(--purple)}
+
+  .answer{margin-top:20px;display:none}
+  .answer.show{display:block;animation:rise .45s cubic-bezier(.2,.7,.2,1)}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .verdict{font-size:19px;font-weight:600;padding:20px 22px;border-radius:14px;border:1px solid var(--line);line-height:1.5}
   .verdict .num{font-family:'Geist Mono';font-weight:700}
-  .v-drift{background:rgba(210,153,34,.10);border-color:rgba(210,153,34,.4)}
-  .v-agree{background:rgba(63,185,80,.10);border-color:rgba(63,185,80,.4)}
+  .v-drift{background:rgba(224,168,58,.10);border-color:rgba(224,168,58,.4)}
+  .v-agree{background:rgba(63,208,127,.10);border-color:rgba(63,208,127,.4)}
   .v-unk{background:rgba(124,124,140,.12)}
+  .cursor{display:inline-block;width:9px;height:19px;background:var(--txt);vertical-align:-3px;
+    margin-left:1px;animation:bl .9s steps(1) infinite}
+  @keyframes bl{50%{opacity:0}}
 
   .claims{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
-  @media(max-width:640px){.claims{grid-template-columns:1fr}}
-  .claim{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px}
-  .claim.win{border-color:rgba(63,185,80,.5)}
-  .claim.old{opacity:.85}
-  .claim .tag{font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:6px;font-weight:600}
-  .tag-win{background:rgba(63,185,80,.16);color:var(--green)}
-  .tag-old{background:rgba(255,123,114,.14);color:var(--red)}
-  .claim .val{font-family:'Geist Mono';font-size:30px;font-weight:700;margin:10px 0 6px}
-  .claim .meta{font-size:13px;color:var(--dim)}
+  @media(max-width:620px){.claims{grid-template-columns:1fr}}
+  .claim{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:17px;
+    animation:rise .5s both}
+  .claim.win{border-color:rgba(63,208,127,.45)}
+  .claim.old{opacity:.9}
+  .claim .tag{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;padding:3px 9px;border-radius:6px;font-weight:600}
+  .tag-win{background:rgba(63,208,127,.16);color:var(--green)}
+  .tag-old{background:rgba(255,139,130,.14);color:var(--red)}
+  .claim .val{font-family:'Geist Mono';font-size:29px;font-weight:700;margin:11px 0 7px}
+  .claim .meta{font-size:12.5px;color:var(--dim)}
   .claim a{color:var(--blue);text-decoration:none;word-break:break-all}
   .claim a:hover{text-decoration:underline}
-
-  .why{margin-top:14px;font-size:14px;color:var(--dim);background:var(--panel2);
+  .why{margin-top:14px;font-size:13.5px;color:var(--dim);background:var(--panel2);
     border-left:3px solid var(--purple);border-radius:0 8px 8px 0;padding:12px 16px}
-
-  /* live check */
-  .live{margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:16px;background:var(--panel2)}
-  .live .h{font-size:13px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
-  .pill{display:inline-block;font-family:'Geist Mono';font-size:13px;font-weight:600;padding:4px 10px;border-radius:6px}
-  .p-drift{background:rgba(210,153,34,.16);color:var(--amber)}
-  .p-agree{background:rgba(63,185,80,.16);color:var(--green)}
+  .live{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:15px 16px;background:var(--panel2)}
+  .live .h{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+  .pill{display:inline-block;font-family:'Geist Mono';font-size:12.5px;font-weight:600;padding:4px 11px;border-radius:6px}
+  .p-drift{background:rgba(224,168,58,.16);color:var(--amber)}
+  .p-agree{background:rgba(63,208,127,.16);color:var(--green)}
   .p-unk{background:rgba(124,124,140,.18);color:var(--dim)}
 
-  /* tool trail */
-  .trail{margin-top:16px;background:#0b0f16;border:1px solid var(--line);border-radius:12px;
-    padding:16px;font-family:'Geist Mono';font-size:12.5px;color:#bac2de;overflow-x:auto}
-  .trail .k{color:var(--purple)} .trail .n{color:var(--blue)}
-  .trail .step{white-space:pre;padding:2px 0}
-
-  footer{text-align:center;color:var(--dim);font-size:14px;margin-top:48px}
+  footer{text-align:center;color:var(--dim);font-size:14px;margin-top:52px}
   footer a{color:var(--blue);text-decoration:none}
   .pid{font-family:'Geist Mono';color:var(--purple)}
-  .loading{color:var(--dim);text-align:center;padding:30px}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <span class="badge">Sanity Challenge · Path One · Interactive demo</span>
+    <span class="badge">Sanity Challenge · Path One · live demo</span>
     <h1>Which AWS number is <span class="g">actually current?</span></h1>
-    <p class="sub">Pick a question. The agent pulls the real structured facts from Sanity, reconciles the conflict to one cited answer, and shows where the live AWS value has drifted.</p>
+    <p class="sub">Ask the agent. It pulls the structured facts from Sanity, reconciles the conflict to one cited answer, then checks where the live AWS value has drifted.</p>
   </header>
 
   <div class="note">
-    <b>This is a demo with sample data</b>, so you can see how the agent works without any setup.
-    The facts mirror the real records in the Sanity dataset (project <span class="pid">0q5ohtvv</span>)
-    and are reconciled in your browser with the same source-precedence rule the agent uses. The
-    <b>live AWS</b> column shows results captured from a real read-only run; a browser cannot call
-    an AWS account, so those numbers are fixed examples. Run the real agent from the
-    <a href="https://github.com/simplynadaf/aws-source-of-truth-agent" style="color:inherit;text-decoration:underline">repo</a>
-    to check your own account.
+    <b>Demo with sample data</b> so you can see how it works with zero setup. The facts mirror the
+    real records in the Sanity dataset (project <span class="pid">0q5ohtvv</span>) and are reconciled
+    in your browser with the same rule the agent uses. The <b>live AWS</b> results are captured from a
+    real read-only run; a browser cannot call an AWS account, so those are fixed examples. Run the real
+    agent from the <a href="https://github.com/simplynadaf/aws-source-of-truth-agent">repo</a> to check your own.
   </div>
 
-  <div class="tool">
-    <div class="label">Ask a question</div>
-    <select id="q"></select>
-    <button class="runbtn" id="run">Reconcile &amp; check</button>
+  <div class="promptbar">
+    <div class="pwrap">
+      <span class="chev">&gt;_</span>
+      <input id="prompt" autocomplete="off" placeholder="Ask about an AWS quota, limit, price, or version..." />
+      <button class="askbtn" id="ask">Ask agent</button>
+    </div>
+    <div class="sugg" id="sugg"></div>
+    <div class="chips" id="chips"></div>
+  </div>
 
+  <div class="stage" id="stage">
+    <div class="pipe" id="pipe"></div>
     <div class="answer" id="answer">
       <div class="verdict" id="verdict"></div>
       <div class="claims" id="claims"></div>
       <div class="why" id="why"></div>
       <div class="live" id="live"></div>
-      <div class="trail" id="trail"></div>
     </div>
-    <div class="loading" id="loading">Loading real facts from the Sanity public dataset…</div>
   </div>
 
   <footer>
@@ -135,135 +179,159 @@
 </div>
 
 <script>
-// ---- source precedence: mirrors agent/reconcile.py ----
 const PREC = { serviceQuotasConsole:5, pricingPage:5, changelog:4, officialDocs:3, blog:1 };
-
-// ---- live AWS results, captured from a real read-only run (see VERIFIED docs) ----
-// browser can't call AWS; these are fixed snapshots, clearly labelled in the UI.
 const LIVE = {
-  "EC2|quota":   { status:"drift", value:"16", detail:"Service Quotas ec2/L-1216C47A = 16" },
-  "S3|price":    { status:"agree", value:"0.023", detail:"Price List API: S3 Standard = 0.023 USD/GB-mo" },
-  "EC2|regionalAvailability": { status:"agree", value:"Available", detail:"EC2 DescribeInstanceTypeOfferings r8g in us-east-1: Available" },
-  "RDS|versionSupport": { status:"drift", value:"11", detail:"Oldest available RDS PostgreSQL major = 11" },
-  "Lambda|limit": { status:"unavailable", value:null, detail:"No Service Quotas mapping wired for this fact" },
-  "EBS|limit":   { status:"unavailable", value:null, detail:"No per-volume gp3 IOPS quota exists in Service Quotas" },
+  "EC2|quota":{status:"drift",value:"16",detail:"Service Quotas ec2/L-1216C47A = 16"},
+  "S3|price":{status:"agree",value:"0.023",detail:"Price List API: S3 Standard = 0.023 USD/GB-mo"},
+  "EC2|regionalAvailability":{status:"agree",value:"Available",detail:"EC2 DescribeInstanceTypeOfferings r8g in us-east-1: Available"},
+  "RDS|versionSupport":{status:"drift",value:"11",detail:"Oldest available RDS PostgreSQL major = 11"},
+  "Lambda|limit":{status:"unavailable",value:null,detail:"No Service Quotas mapping wired for this fact"},
+  "EBS|limit":{status:"unavailable",value:null,detail:"No per-volume gp3 IOPS quota exists in Service Quotas"},
 };
-
-const EMBEDDED = [{"currentValue":"80000","effectiveDate":"2026-01-15","factType":"limit","key":"Maximum provisioned IOPS per gp3 volume","quotaCode":null,"region":"us-east-1","service":"EBS","source":{"kind":"serviceQuotasConsole","name":"Amazon EBS gp3 volume limits (Service Quotas / EBS console)","url":"https://console.aws.amazon.com/servicequotas/home/services/ebs/quotas"},"supersedes":null,"unit":"IOPS"},{"currentValue":"16000","effectiveDate":"2020-01-01","factType":"limit","key":"Maximum IOPS per volume for a general purpose SSD EBS volume","quotaCode":null,"region":"us-east-1","service":"EBS","source":{"kind":"officialDocs","name":"Older general purpose SSD storage guide: maximum IOPS per volume for a general purpose SSD EBS volume","url":"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html"},"supersedes":null,"unit":"IOPS"},{"currentValue":"Available","effectiveDate":"2026-03-01","factType":"regionalAvailability","key":"Graviton4 (R8g) instance availability","quotaCode":null,"region":"us-east-1","service":"EC2","source":{"kind":"officialDocs","name":"Amazon EC2 instance types by region","url":"https://aws.amazon.com/ec2/instance-types/"},"supersedes":null,"unit":""},{"currentValue":"5","effectiveDate":"2026-06-01","factType":"quota","key":"Running On-Demand Standard (A, C, D, H, I, M, R, T, Z) instances","quotaCode":"L-1216C47A","region":"us-east-1","service":"EC2","source":{"kind":"serviceQuotasConsole","name":"Service Quotas console","url":"https://console.aws.amazon.com/servicequotas/home/services/ec2/quotas/L-1216C47A"},"supersedes":{"reason":"New accounts now start at a lower default and request increases; the Service Quotas console reflects the live per-account value, an older static doc snapshot does not.","stillShownBy":"An older EC2 user-guide snapshot","stillShownUrl":"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html","value":"32"},"unit":"vCPUs"},{"currentValue":"32","effectiveDate":"2023-01-01","factType":"quota","key":"Running On-Demand Standard (A, C, D, H, I, M, R, T, Z) instances","quotaCode":"L-1216C47A","region":"us-east-1","service":"EC2","source":{"kind":"officialDocs","name":"Amazon EC2 User Guide - resource limits (older snapshot)","url":"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html"},"supersedes":null,"unit":"vCPUs"},{"currentValue":"1000","effectiveDate":"2024-01-01","factType":"limit","key":"Default account concurrent executions","quotaCode":"L-B99A9384","region":"us-east-1","service":"Lambda","source":{"kind":"officialDocs","name":"Lambda Developer Guide - quotas","url":"https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html"},"supersedes":null,"unit":"concurrent executions"},{"currentValue":"13","effectiveDate":"2026-02-01","factType":"versionSupport","key":"Amazon RDS for PostgreSQL - oldest supported major version","quotaCode":null,"region":"us-east-1","service":"RDS","source":{"kind":"changelog","name":"RDS for PostgreSQL release notes","url":"https://docs.aws.amazon.com/AmazonRDS/latest/PostgreSQLReleaseNotes/"},"supersedes":{"reason":"Older major versions reached end of standard support; the release notes track the current supported floor, an un-updated tutorial does not.","stillShownBy":"An older getting-started tutorial","stillShownUrl":"https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_GettingStarted.html","value":"11"},"unit":"major version"},{"currentValue":"0.023","effectiveDate":"2025-01-01","factType":"price","key":"S3 Standard storage, first 50 TB / month","quotaCode":null,"region":"us-east-1","service":"S3","source":{"kind":"pricingPage","name":"Amazon S3 pricing page","url":"https://aws.amazon.com/s3/pricing/"},"supersedes":{"reason":"The official S3 pricing page is authoritative and current; a years-old third-party blog snapshot is not.","stillShownBy":"A stale third-party cost blog (illustrative, no canonical link)","stillShownUrl":"","value":"0.021"},"unit":"USD per GB-month"}];
-const QUERY = '*[_type=="awsFact"]{service,factType,key,currentValue,unit,region,effectiveDate,source,supersedes,quotaCode}'; // for reference; the live agent runs this
-
-
-let GROUPS = {}; // "SERVICE|factType" -> [facts]
-
-function precedence(f){ return PREC[f.source && f.source.kind] || 0; }
-function parseDate(s){ return s ? new Date(s).getTime() : 0; }
-
-function reconcile(facts){
-  const ordered = [...facts].sort((a,b)=>{
-    const p = precedence(b)-precedence(a);
-    return p !== 0 ? p : parseDate(b.effectiveDate)-parseDate(a.effectiveDate);
-  });
-  const win = ordered[0];
-  let old = null;
-  for(const f of ordered.slice(1)){ if(f.currentValue !== win.currentValue){ old = f; break; } }
-  return { win, old, considered: facts.length };
-}
-
 const QUESTIONS = {
-  "EC2|quota": "What is the current On-Demand Standard vCPU quota in us-east-1?",
-  "EBS|limit": "What is the max IOPS per volume for a gp3 EBS volume?",
-  "S3|price": "What is the current S3 Standard storage price per GB in us-east-1?",
-  "RDS|versionSupport": "What is the oldest supported RDS PostgreSQL major version?",
-  "Lambda|limit": "What is the Lambda concurrent executions limit?",
-  "EC2|regionalAvailability": "Is the R8g Graviton family available in us-east-1?",
+  "EC2|quota":"What is the current On-Demand Standard vCPU quota in us-east-1?",
+  "EBS|limit":"What is the max IOPS per volume for a gp3 EBS volume?",
+  "S3|price":"What is the current S3 Standard storage price per GB in us-east-1?",
+  "RDS|versionSupport":"What is the oldest supported RDS PostgreSQL major version?",
+  "Lambda|limit":"What is the Lambda concurrent executions limit?",
+  "EC2|regionalAvailability":"Is the R8g Graviton family available in us-east-1?",
 };
+const EMBEDDED = [{"currentValue":"80000","effectiveDate":"2026-01-15","factType":"limit","key":"Maximum provisioned IOPS per gp3 volume","quotaCode":null,"region":"us-east-1","service":"EBS","source":{"kind":"serviceQuotasConsole","name":"Amazon EBS gp3 volume limits (Service Quotas / EBS console)","url":"https://console.aws.amazon.com/servicequotas/home/services/ebs/quotas"},"supersedes":null,"unit":"IOPS"},{"currentValue":"16000","effectiveDate":"2020-01-01","factType":"limit","key":"Maximum IOPS per volume for a general purpose SSD EBS volume","quotaCode":null,"region":"us-east-1","service":"EBS","source":{"kind":"officialDocs","name":"Older general purpose SSD storage guide: maximum IOPS per volume for a general purpose SSD EBS volume","url":"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html"},"supersedes":null,"unit":"IOPS"},{"currentValue":"Available","effectiveDate":"2026-03-01","factType":"regionalAvailability","key":"Graviton4 (R8g) instance availability","quotaCode":null,"region":"us-east-1","service":"EC2","source":{"kind":"officialDocs","name":"Amazon EC2 instance types by region","url":"https://aws.amazon.com/ec2/instance-types/"},"supersedes":null,"unit":""},{"currentValue":"5","effectiveDate":"2026-06-01","factType":"quota","key":"Running On-Demand Standard (A, C, D, H, I, M, R, T, Z) instances","quotaCode":"L-1216C47A","region":"us-east-1","service":"EC2","source":{"kind":"serviceQuotasConsole","name":"Service Quotas console","url":"https://console.aws.amazon.com/servicequotas/home/services/ec2/quotas/L-1216C47A"},"supersedes":{"reason":"New accounts now start at a lower default and request increases; the Service Quotas console reflects the live per-account value, an older static doc snapshot does not.","stillShownBy":"An older EC2 user-guide snapshot","stillShownUrl":"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html","value":"32"},"unit":"vCPUs"},{"currentValue":"32","effectiveDate":"2023-01-01","factType":"quota","key":"Running On-Demand Standard (A, C, D, H, I, M, R, T, Z) instances","quotaCode":"L-1216C47A","region":"us-east-1","service":"EC2","source":{"kind":"officialDocs","name":"Amazon EC2 User Guide - resource limits (older snapshot)","url":"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html"},"supersedes":null,"unit":"vCPUs"},{"currentValue":"1000","effectiveDate":"2024-01-01","factType":"limit","key":"Default account concurrent executions","quotaCode":"L-B99A9384","region":"us-east-1","service":"Lambda","source":{"kind":"officialDocs","name":"Lambda Developer Guide - quotas","url":"https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html"},"supersedes":null,"unit":"concurrent executions"},{"currentValue":"13","effectiveDate":"2026-02-01","factType":"versionSupport","key":"Amazon RDS for PostgreSQL - oldest supported major version","quotaCode":null,"region":"us-east-1","service":"RDS","source":{"kind":"changelog","name":"RDS for PostgreSQL release notes","url":"https://docs.aws.amazon.com/AmazonRDS/latest/PostgreSQLReleaseNotes/"},"supersedes":{"reason":"Older major versions reached end of standard support; the release notes track the current supported floor, an un-updated tutorial does not.","stillShownBy":"An older getting-started tutorial","stillShownUrl":"https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_GettingStarted.html","value":"11"},"unit":"major version"},{"currentValue":"0.023","effectiveDate":"2025-01-01","factType":"price","key":"S3 Standard storage, first 50 TB / month","quotaCode":null,"region":"us-east-1","service":"S3","source":{"kind":"pricingPage","name":"Amazon S3 pricing page","url":"https://aws.amazon.com/s3/pricing/"},"supersedes":{"reason":"The official S3 pricing page is authoritative and current; a years-old third-party blog snapshot is not.","stillShownBy":"A stale third-party cost blog (illustrative, no canonical link)","stillShownUrl":"","value":"0.021"},"unit":"USD per GB-month"}];
 
-function groupFacts(list){
-  GROUPS = {};
-  for(const f of list){ const key=f.service+"|"+f.factType; (GROUPS[key]=GROUPS[key]||[]).push(f); }
-}
-async function load(){
-  // Demo data only: the facts below are a snapshot of the public Sanity dataset,
-  // reconciled in-browser. No network call, so the demo always works offline.
-  groupFacts(EMBEDDED);
-  const sel = document.getElementById('q');
-  for(const key of Object.keys(QUESTIONS)){
-    if(GROUPS[key]){
-      const o = document.createElement('option');
-      o.value = key; o.textContent = QUESTIONS[key];
-      sel.appendChild(o);
-    }
-  }
-  document.getElementById('loading').style.display = 'none';
-}
+let GROUPS = {};
+for(const f of EMBEDDED){ const k=f.service+"|"+f.factType; (GROUPS[k]=GROUPS[k]||[]).push(f); }
+const KEYS = Object.keys(QUESTIONS).filter(k=>GROUPS[k]);
 
+function prec(f){ return PREC[f.source&&f.source.kind]||0; }
+function pdate(s){ return s?new Date(s).getTime():0; }
 function esc(s){ return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function reconcile(facts){
+  const o=[...facts].sort((a,b)=>{const p=prec(b)-prec(a);return p!==0?p:pdate(b.effectiveDate)-pdate(a.effectiveDate);});
+  const win=o[0]; let old=null;
+  for(const f of o.slice(1)){ if(f.currentValue!==win.currentValue){old=f;break;} }
+  return {win,old,considered:facts.length};
+}
+function kbPath(key){
+  const [svc,ft]=key.split("|");
+  const tail = ft==='price'?'pricing':ft==='versionSupport'?'version_support':ft==='regionalAvailability'?'regional_availability':'quotas_and_limits';
+  return svc.toLowerCase()+"/"+tail;
+}
 
-function run(){
-  const key = document.getElementById('q').value;
-  const facts = GROUPS[key] || [];
-  if(!facts.length) return;
-  const { win, old, considered } = reconcile(facts);
-  const live = LIVE[key] || { status:"unavailable", value:null, detail:"no mapping" };
-  const unit = win.unit ? ' ' + win.unit : '';
-
-  // verdict
-  const v = document.getElementById('verdict');
-  if(live.status === 'drift' && live.value != null){
-    v.className = 'verdict v-drift';
-    v.innerHTML = `The record says <span class="num">${esc(win.currentValue)}${unit}</span>, but live AWS reports <span class="num">${esc(live.value)}</span> right now. This account has drifted from the recorded value.`;
-  } else if(live.status === 'agree'){
-    v.className = 'verdict v-agree';
-    v.innerHTML = `Current value: <span class="num">${esc(win.currentValue)}${unit}</span>. Live AWS agrees.`;
-  } else {
-    v.className = 'verdict v-unk';
-    v.innerHTML = `Current value: <span class="num">${esc(win.currentValue)}${unit}</span>. Live AWS check unavailable for this fact.`;
+// fuzzy match a free-text query to a fact key
+function matchKey(q){
+  q=q.toLowerCase();
+  let best=null,bestScore=0;
+  for(const k of KEYS){
+    const hay=(k+" "+QUESTIONS[k]+" "+GROUPS[k].map(f=>f.key).join(" ")).toLowerCase();
+    let s=0; for(const w of q.split(/\s+/).filter(Boolean)){ if(hay.includes(w)) s++; }
+    if(s>bestScore){ bestScore=s; best=k; }
   }
+  return bestScore>0?best:null;
+}
 
-  // claims
-  const claims = document.getElementById('claims');
-  let html = `<div class="claim win"><span class="tag tag-win">Current</span>
+/* ---------- prompt + suggestions ---------- */
+const promptEl=document.getElementById('prompt');
+const suggEl=document.getElementById('sugg');
+const chipsEl=document.getElementById('chips');
+// chips = 3 marquee examples
+["EC2|quota","EBS|limit","RDS|versionSupport"].forEach(k=>{
+  const c=document.createElement('div'); c.className='chip'; c.textContent=QUESTIONS[k];
+  c.onclick=()=>{ promptEl.value=QUESTIONS[k]; hideSugg(); ask(k); };
+  chipsEl.appendChild(c);
+});
+function renderSugg(q){
+  const ql=q.toLowerCase();
+  const hits=KEYS.filter(k=>QUESTIONS[k].toLowerCase().includes(ql)||k.toLowerCase().includes(ql)||GROUPS[k].some(f=>f.key.toLowerCase().includes(ql)));
+  if(!q || !hits.length){ hideSugg(); return; }
+  suggEl.innerHTML=hits.map(k=>`<div class="sitem" data-k="${k}"><span>${esc(QUESTIONS[k])}</span><span class="svc">${k.split("|")[0]}</span></div>`).join('');
+  suggEl.classList.add('show');
+  suggEl.querySelectorAll('.sitem').forEach(el=>el.onclick=()=>{ promptEl.value=QUESTIONS[el.dataset.k]; hideSugg(); ask(el.dataset.k); });
+}
+function hideSugg(){ suggEl.classList.remove('show'); }
+promptEl.addEventListener('input',e=>renderSugg(e.target.value));
+promptEl.addEventListener('focus',e=>{ if(e.target.value) renderSugg(e.target.value); });
+document.addEventListener('click',e=>{ if(!e.target.closest('.promptbar')) hideSugg(); });
+promptEl.addEventListener('keydown',e=>{ if(e.key==='Enter'){ hideSugg(); ask(); } });
+document.getElementById('ask').onclick=()=>{ hideSugg(); ask(); };
+
+/* ---------- the agentic run ---------- */
+const stage=document.getElementById('stage'), pipe=document.getElementById('pipe'), answer=document.getElementById('answer');
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+let running=false;
+
+async function typeInto(el,text,speed=14){
+  el.innerHTML=''; const cur=document.createElement('span'); cur.className='cursor'; el.appendChild(cur);
+  for(let i=0;i<text.length;i++){ cur.insertAdjacentText('beforebegin',text[i]); await sleep(speed); }
+  cur.remove();
+}
+
+async function ask(forcedKey){
+  if(running) return;
+  const key = forcedKey || matchKey(promptEl.value.trim());
+  if(!key){
+    stage.classList.add('show');
+    pipe.innerHTML=`<div class="pstep on"><div class="ic"><div class="dot" style="background:var(--red)"></div></div><span class="lbl">No matching AWS fact in this demo. Try one of the example chips below.</span></div>`;
+    answer.classList.remove('show'); return;
+  }
+  if(!promptEl.value.trim()) promptEl.value=QUESTIONS[key];
+  running=true; answer.classList.remove('show'); stage.classList.add('show');
+  stage.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  const facts=GROUPS[key], {win,old,considered}=reconcile(facts), live=LIVE[key]||{status:'unavailable',value:null,detail:'no mapping'};
+  const path=kbPath(key), region=win.region||'us-east-1';
+
+  const steps=[
+    {html:`<span class="k">knowledge_base_search</span>(<b>"${esc(QUESTIONS[key])}"</b>) &rarr; top='${path}'`},
+    {html:`<span class="k">knowledge_base_read</span>(['${path}']) &rarr; ${considered} structured fact(s)`},
+    {html:`<span class="k">reconcile_facts</span>(n=${considered}) &rarr; current=<b>${esc(win.currentValue)}</b>`},
+    {html:`<span class="k">verify_live</span>(${key.split("|")[0]}/${key.split("|")[1]}) &rarr; <b>${live.status}</b>`},
+  ];
+  pipe.innerHTML=steps.map((s,i)=>`<div class="pstep" id="ps${i}"><div class="ic"><div class="dot"></div></div><span class="lbl">${s.html}</span></div>`).join('');
+
+  for(let i=0;i<steps.length;i++){
+    const el=document.getElementById('ps'+i); el.classList.add('on');
+    el.querySelector('.ic').innerHTML='<div class="spin"></div>';
+    await sleep(520+Math.random()*260);
+    el.querySelector('.ic').innerHTML='<span class="chk">&#10003;</span>';
+    el.classList.add('done');
+  }
+  await sleep(180);
+
+  // build answer
+  const v=document.getElementById('verdict');
+  const unit=win.unit?' '+win.unit:'';
+  let vtext,vcls;
+  if(live.status==='drift'&&live.value!=null){ vcls='v-drift'; vtext=`The record says ${win.currentValue}${unit}, but live AWS reports ${live.value} right now. This account has drifted from the recorded value.`; }
+  else if(live.status==='agree'){ vcls='v-agree'; vtext=`Current value: ${win.currentValue}${unit}. Live AWS agrees.`; }
+  else { vcls='v-unk'; vtext=`Current value: ${win.currentValue}${unit}. Live AWS check unavailable for this fact.`; }
+  v.className='verdict '+vcls;
+
+  const claims=document.getElementById('claims');
+  let h=`<div class="claim win" style="animation-delay:.05s"><span class="tag tag-win">Current</span>
     <div class="val">${esc(win.currentValue)}${unit}</div>
     <div class="meta">${esc(win.source.name)}<br><a href="${esc(win.source.url)}" target="_blank" rel="noopener">${esc(win.source.url)}</a><br>effective ${esc(win.effectiveDate||'n/a')} · ${esc(win.source.kind)}</div></div>`;
-  if(old){
-    html += `<div class="claim old"><span class="tag tag-old">Superseded</span>
-      <div class="val">${esc(old.currentValue)}${old.unit?(' '+esc(old.unit)):''}</div>
-      <div class="meta">${esc(old.source.name)}<br><a href="${esc(old.source.url)}" target="_blank" rel="noopener">${esc(old.source.url)}</a><br>effective ${esc(old.effectiveDate||'n/a')} · ${esc(old.source.kind)}</div></div>`;
-  }
-  claims.innerHTML = html;
+  if(old){ h+=`<div class="claim old" style="animation-delay:.14s"><span class="tag tag-old">Superseded</span>
+    <div class="val">${esc(old.currentValue)}${old.unit?(' '+esc(old.unit)):''}</div>
+    <div class="meta">${esc(old.source.name)}<br><a href="${esc(old.source.url)}" target="_blank" rel="noopener">${esc(old.source.url)}</a><br>effective ${esc(old.effectiveDate||'n/a')} · ${esc(old.source.kind)}</div></div>`; }
+  claims.innerHTML=h;
 
-  // why
-  const why = document.getElementById('why');
-  if(old){
-    why.style.display = 'block';
-    why.innerHTML = `<b>Why the current one wins:</b> ${esc(win.source.kind)} outranks ${esc(old.source.kind)} by source precedence` +
-      (parseDate(win.effectiveDate) >= parseDate(old.effectiveDate) ? `, and it is newer (${esc(win.effectiveDate)} vs ${esc(old.effectiveDate)}).` : `.`) +
+  const why=document.getElementById('why');
+  if(old){ why.style.display='block';
+    why.innerHTML=`<b>Why the current one wins:</b> ${esc(win.source.kind)} outranks ${esc(old.source.kind)} by source precedence`+
+      (pdate(win.effectiveDate)>=pdate(old.effectiveDate)?`, and it is newer (${esc(win.effectiveDate)} vs ${esc(old.effectiveDate)}).`:`.`)+
       ` A keyword search over the same text can rank the stale value first; this rule does not.`;
-  } else { why.style.display = 'none'; }
+  } else why.style.display='none';
 
-  // live panel
-  const lv = document.getElementById('live');
-  const pillClass = live.status==='drift'?'p-drift':live.status==='agree'?'p-agree':'p-unk';
-  lv.innerHTML = `<div class="h">Live AWS cross-check (read-only · demo snapshot)</div>
-    <span class="pill ${pillClass}">${live.status.toUpperCase()}</span>
-    <span style="color:var(--dim);font-size:14px;margin-left:8px">${esc(live.detail)}</span>`;
+  const lv=document.getElementById('live');
+  const pc=live.status==='drift'?'p-drift':live.status==='agree'?'p-agree':'p-unk';
+  lv.innerHTML=`<div class="h">Live AWS cross-check (read-only · demo snapshot)</div>
+    <span class="pill ${pc}">${live.status.toUpperCase()}</span>
+    <span style="color:var(--dim);font-size:13.5px;margin-left:8px">${esc(live.detail)}</span>`;
 
-  // tool trail
-  const t = document.getElementById('trail');
-  const region = win.region || 'us-east-1';
-  const pathGuess = key.split('|')[0].toLowerCase() + '/' + (key.split('|')[1]==='price'?'pricing':key.split('|')[1]==='versionSupport'?'version_support':key.split('|')[1]==='regionalAvailability'?'regional_availability':'quotas_and_limits');
-  t.innerHTML =
-    `<div class="step"><span class="k">[Sanity Context MCP]</span> knowledge_base_search(...) -&gt; top='${pathGuess}'; knowledge_base_read(['${pathGuess}'])</div>` +
-    `<div class="step">fetch_candidate_facts(service='${key.split('|')[0]}', region='${region}') -&gt; <span class="n">${considered}</span> rows</div>` +
-    `<div class="step">reconcile_facts(n=<span class="n">${considered}</span>) -&gt; current=<span class="n">${esc(win.currentValue)}</span></div>` +
-    `<div class="step">verify_live(...) -&gt; ${esc(live.status)}</div>`;
-
-  document.getElementById('answer').classList.add('show');
+  answer.classList.add('show');
+  await typeInto(v, vtext, 12);   // stream the verdict last, like the agent "speaking"
+  running=false;
 }
-
-document.getElementById('run').addEventListener('click', run);
-document.getElementById('q').addEventListener('change', run);
-load();
 </script>
 </body>
 </html>
