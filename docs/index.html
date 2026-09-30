@@ -4,393 +4,269 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>AWS Source of Truth — reconciled, cited, live-checked</title>
-<meta name="description" content="An agent that only works because the content is structured: it reconciles conflicting AWS facts to one cited answer, then checks the live AWS API and reports drift." />
-
-<!-- Open Graph -->
-<meta property="og:type" content="website" />
+<meta name="description" content="Interactive demo: an agent that reconciles conflicting AWS facts to one cited answer using structured Sanity content, then reports live AWS drift." />
 <meta property="og:title" content="AWS Source of Truth" />
-<meta property="og:description" content="Reconciles conflicting AWS facts to one cited answer, then live-checks the real AWS API and reports drift. Sanity project 0q5ohtvv." />
-
+<meta property="og:description" content="Which AWS number is current? Reconciles conflicting facts to one cited answer, then live-checks AWS. Sanity project 0q5ohtvv." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/ScrollTrigger.min.js"></script>
-
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <style>
-  :root {
-    --paper: #F5F9FC;           /* cool near-white, faint ocean tint */
-    --paper-2: #E8F1F7;         /* soft ocean mist */
-    --card: #ffffff;            /* clean white lift */
-    --ink: #0b2942;             /* deep navy — text/headlines */
-    --muted: #4a6076;           /* slate blue-grey */
-    --soft: #8199ad;            /* faded ocean grey */
-    --rule: rgba(11,41,66,0.10);
-    --rule-solid: rgba(11,41,66,0.16);
-    --accent: #0891b2;          /* ocean cyan-teal — truth / reconciled */
-    --accent-tint: rgba(8,145,178,0.10);
-    --link: #0369a1;            /* deeper ocean blue for links */
-    --agree: #0d9488;           /* teal-green */
-    --drift: #e2683c;           /* warm coral — pops against the blue */
-    --unknown: #7c93a6;         /* muted slate */
-    --mono: 'Geist Mono', ui-monospace, monospace;
-    --sans: 'Geist', system-ui, sans-serif;
-    --serif: 'Instrument Serif', Georgia, serif;
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --line:rgba(255,255,255,.09);
+    --txt:#e6edf3; --dim:#8b949e; --purple:#a371f7; --purpleD:#7c3aed;
+    --green:#3fb950; --amber:#d29922; --red:#ff7b72; --blue:#79c0ff;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-  body {
-    background: var(--paper);
-    color: var(--ink);
-    font-family: var(--sans);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-  }
-  /* subtle fixed grain for texture */
-  body::after {
-    content: ''; position: fixed; inset: 0; z-index: 100; pointer-events: none;
-    opacity: 0.018;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    mix-blend-mode: multiply;
-  }
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
-  a { color: var(--link); text-decoration: none; }
-  a:hover { text-decoration: underline; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--txt);font-family:Geist,-apple-system,sans-serif;
+    line-height:1.6;padding:0 20px 80px}
+  .wrap{max-width:920px;margin:0 auto}
+  code,kbd,.mono{font-family:'Geist Mono',ui-monospace,monospace}
 
-  /* header */
-  header { padding: 88px 0 40px; }
-  .eyebrow {
-    font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em;
-    text-transform: uppercase; color: var(--accent); margin-bottom: 18px;
-  }
-  h1 {
-    font-family: var(--serif); font-weight: 400; font-size: clamp(2.6rem, 6vw, 4.6rem);
-    line-height: 1.02; letter-spacing: -0.01em; text-wrap: balance;
-  }
-  h1 em { font-style: italic; color: var(--accent); }
-  .lede { margin-top: 22px; max-width: 60ch; color: var(--muted); font-size: 1.12rem; }
-  .meta {
-    margin-top: 26px; display: flex; flex-wrap: wrap; gap: 10px;
-    font-family: var(--mono); font-size: 12px;
-  }
-  .chip {
-    border: 1px solid var(--rule-solid); border-radius: 6px; padding: 6px 12px;
-    color: var(--muted); background: var(--paper-2);
-  }
-  .chip b { color: var(--ink); font-weight: 600; }
+  /* hero */
+  header{padding:64px 0 28px;text-align:center}
+  .badge{display:inline-block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--purple);border:1px solid var(--line);border-radius:999px;padding:6px 14px;margin-bottom:22px}
+  h1{font-size:clamp(30px,5vw,46px);font-weight:700;line-height:1.1;letter-spacing:-.02em}
+  h1 .g{background:linear-gradient(90deg,var(--purple),var(--blue));-webkit-background-clip:text;
+    background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{color:var(--dim);font-size:18px;max-width:620px;margin:18px auto 0}
 
-  /* the "why structured content" spine */
-  .spine { padding: 44px 0; border-top: 1px solid var(--rule); margin-top: 48px; }
-  .spine h2 { font-family: var(--serif); font-weight: 400; font-size: 2rem; margin-bottom: 8px; }
-  .spine p.sub { color: var(--muted); max-width: 62ch; margin-bottom: 32px; }
-  .flow {
-    display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 14px; align-items: stretch;
-  }
-  .flow-step {
-    background: var(--card); border: 1px solid var(--rule-solid); border-radius: 10px;
-    padding: 18px 18px 20px;
-  }
-  .flow-step .tag {
-    font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
-    color: var(--soft); margin-bottom: 10px; display: block;
-  }
-  .flow-step .big { font-family: var(--mono); font-size: 2rem; font-weight: 500; }
-  .flow-step .cap { font-size: 12px; color: var(--muted); margin-top: 6px; }
-  .flow-step.old .big { color: var(--soft); text-decoration: line-through; text-decoration-thickness: 1px; }
-  .flow-step.reconciled { background: var(--accent-tint); border-color: rgba(235,108,54,0.5); }
-  .flow-step.reconciled .big { color: var(--accent); }
-  .flow-step.live .big { color: var(--drift); }
-  .flow-arrow { align-self: center; color: var(--soft); font-family: var(--mono); font-size: 1.2rem; }
+  /* demo-data banner */
+  .note{max-width:920px;margin:26px auto 0;background:rgba(210,153,34,.10);
+    border:1px solid rgba(210,153,34,.35);border-radius:10px;padding:12px 16px;
+    font-size:14px;color:#f0d68a}
+  .note b{color:#ffe08a}
 
-  /* facts grid */
-  .facts { padding: 20px 0 60px; }
-  .facts-head {
-    display: flex; align-items: baseline; justify-content: space-between;
-    border-top: 1px solid var(--rule); padding-top: 40px; margin-bottom: 26px; flex-wrap: wrap; gap: 12px;
-  }
-  .facts-head h2 { font-family: var(--serif); font-weight: 400; font-size: 2rem; }
-  .facts-head .count { font-family: var(--mono); font-size: 12px; color: var(--soft); }
-  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
-  .fact {
-    background: var(--card); border: 1px solid var(--rule-solid); border-radius: 12px;
-    padding: 22px; position: relative; overflow: hidden;
-  }
-  .fact.flagship { grid-column: 1 / -1; border-color: rgba(235,108,54,0.4); }
-  .fact-top { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
-  .svc {
-    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
-    background: rgba(11,41,66,0.05); border: 1px solid var(--rule-solid);
-    border-radius: 4px; padding: 3px 8px; color: var(--muted);
-  }
-  .state {
-    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
-    padding: 3px 9px; border-radius: 20px; font-weight: 500; margin-left: auto;
-  }
-  .state.agree { color: var(--agree); background: rgba(13,148,136,0.09); border: 1px solid rgba(13,148,136,0.3); }
-  .state.drift { color: var(--drift); background: rgba(226,104,60,0.10); border: 1px solid rgba(226,104,60,0.33); }
-  .state.unknown { color: var(--unknown); background: rgba(124,147,166,0.12); border: 1px solid rgba(124,147,166,0.3); }
-  .fact h3 { font-size: 1.05rem; font-weight: 600; margin-bottom: 16px; line-height: 1.35; }
+  /* controls */
+  .tool{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:26px;margin-top:26px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+  .label{font-size:13px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+  select{width:100%;background:var(--panel2);color:var(--txt);border:1px solid var(--line);
+    border-radius:10px;padding:14px 16px;font-size:16px;font-family:inherit;cursor:pointer;appearance:none}
+  select:focus{outline:none;border-color:var(--purple)}
+  .runbtn{margin-top:14px;width:100%;background:linear-gradient(90deg,var(--purpleD),var(--purple));
+    color:#fff;border:none;border-radius:10px;padding:14px;font-size:16px;font-weight:600;cursor:pointer}
+  .runbtn:active{transform:translateY(1px)}
 
-  .track { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-  .cell {
-    border: 1px solid var(--rule); border-radius: 8px; padding: 12px; background: var(--paper-2);
-  }
-  .cell .lab { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--soft); }
-  .cell .val { font-family: var(--mono); font-size: 1.35rem; font-weight: 500; margin-top: 6px; }
-  .cell.doc .val { color: var(--soft); text-decoration: line-through; text-decoration-thickness: 1px; }
-  .cell.rec { background: var(--accent-tint); border-color: rgba(235,108,54,0.4); }
-  .cell.rec .val { color: var(--accent); }
-  .cell.liv .val.d { color: var(--drift); }
-  .cell.liv .val.a { color: var(--agree); }
-  .cell.liv .val.u { color: var(--unknown); font-size: 0.95rem; }
-  .cell .unit { font-size: 10px; color: var(--soft); margin-top: 2px; }
-  .cell.single { grid-column: 1 / -1; }
+  /* answer */
+  .answer{margin-top:22px;display:none}
+  .answer.show{display:block;animation:fade .4s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .verdict{font-size:20px;font-weight:600;padding:18px 20px;border-radius:12px;border:1px solid var(--line)}
+  .verdict .num{font-family:'Geist Mono';font-weight:700}
+  .v-drift{background:rgba(210,153,34,.10);border-color:rgba(210,153,34,.4)}
+  .v-agree{background:rgba(63,185,80,.10);border-color:rgba(63,185,80,.4)}
+  .v-unk{background:rgba(124,124,140,.12)}
 
-  .sources { border-top: 1px dashed var(--rule-solid); padding-top: 14px; }
-  .src-row { display: flex; gap: 8px; font-size: 12px; margin-bottom: 6px; color: var(--muted); }
-  .src-row .k { font-family: var(--mono); font-size: 10px; color: var(--soft); min-width: 78px; text-transform: uppercase; letter-spacing: 0.06em; padding-top: 1px; }
-  .src-row a { word-break: break-word; }
+  .claims{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+  @media(max-width:640px){.claims{grid-template-columns:1fr}}
+  .claim{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .claim.win{border-color:rgba(63,185,80,.5)}
+  .claim.old{opacity:.85}
+  .claim .tag{font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:6px;font-weight:600}
+  .tag-win{background:rgba(63,185,80,.16);color:var(--green)}
+  .tag-old{background:rgba(255,123,114,.14);color:var(--red)}
+  .claim .val{font-family:'Geist Mono';font-size:30px;font-weight:700;margin:10px 0 6px}
+  .claim .meta{font-size:13px;color:var(--dim)}
+  .claim a{color:var(--blue);text-decoration:none;word-break:break-all}
+  .claim a:hover{text-decoration:underline}
 
-  /* trail */
-  .trail { padding: 40px 0 80px; border-top: 1px solid var(--rule); }
-  .trail h2 { font-family: var(--serif); font-weight: 400; font-size: 2rem; margin-bottom: 6px; }
-  .trail .sub { color: var(--muted); margin-bottom: 26px; max-width: 60ch; }
-  .term {
-    background: #0b2942;                    /* deep ocean-navy — same hue as --ink, part of the palette */
-    border: 1px solid rgba(11,41,66,0.25);
-    border-radius: 12px;
-    font-family: var(--mono); font-size: 13px; overflow: hidden;
-    box-shadow: 0 20px 50px -24px rgba(11,41,66,0.5);   /* soft ocean-tinted lift */
-  }
-  .term-bar {
-    display: flex; align-items: center; gap: 7px; padding: 12px 16px;
-    background: rgba(255,255,255,0.04);
-    border-bottom: 1px solid rgba(255,255,255,0.10);
-  }
-  .term-bar span { width: 11px; height: 11px; border-radius: 50%; }
-  .term-bar span:nth-child(1){ background:#ff5f56;} .term-bar span:nth-child(2){ background:#ffbd2e;} .term-bar span:nth-child(3){ background:#27c93f;}
-  .term-bar .ttl {
-    margin-left: 10px; font-size: 11px; letter-spacing: 0.06em;
-    color: rgba(233,241,247,0.55); text-transform: none;
-  }
-  .term-body { padding: 20px 22px; line-height: 1.95; color: #dfeaf2; }
-  .term-body > div { white-space: pre-wrap; }
-  .term-body .p  { color: #38d0e8; }          /* bright ocean cyan — prompts/arrows */
-  .term-body .c  { color: #f2f7fb; }          /* near-white — the commands you read */
-  .term-body .o  { color: #8fa8bd; }          /* muted ocean-grey — annotations */
-  .term-body .hl { color: #ff9166; font-weight: 500; }  /* lifted coral — drift, readable on navy */
-  .term-body .ok { color: #4ade80; font-weight: 500; }  /* lifted green — agree/TRUSTED */
+  .why{margin-top:14px;font-size:14px;color:var(--dim);background:var(--panel2);
+    border-left:3px solid var(--purple);border-radius:0 8px 8px 0;padding:12px 16px}
 
-  footer { border-top: 1px solid var(--rule); padding: 34px 0 70px; color: var(--soft); font-family: var(--mono); font-size: 12px; }
-  footer a { color: var(--muted); }
-  footer .row { display: flex; flex-wrap: wrap; gap: 18px; justify-content: space-between; }
+  /* live check */
+  .live{margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:16px;background:var(--panel2)}
+  .live .h{font-size:13px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+  .pill{display:inline-block;font-family:'Geist Mono';font-size:13px;font-weight:600;padding:4px 10px;border-radius:6px}
+  .p-drift{background:rgba(210,153,34,.16);color:var(--amber)}
+  .p-agree{background:rgba(63,185,80,.16);color:var(--green)}
+  .p-unk{background:rgba(124,124,140,.18);color:var(--dim)}
 
-  /* reveal: visible by default (static frame is complete). JS opts INTO the
-     hidden start state only when motion is allowed, so no-JS / screenshots / reduced
-     motion always show everything. */
-  .reveal { opacity: 1; transform: none; }
-  .js-motion .reveal { opacity: 0; transform: translateY(16px); }
-  /* the terminal fades only (no slide) so multi-line text never smears mid-animation */
-  .js-motion .term.reveal { transform: none; }
+  /* tool trail */
+  .trail{margin-top:16px;background:#0b0f16;border:1px solid var(--line);border-radius:12px;
+    padding:16px;font-family:'Geist Mono';font-size:12.5px;color:#bac2de;overflow-x:auto}
+  .trail .k{color:var(--purple)} .trail .n{color:var(--blue)}
+  .trail .step{white-space:pre;padding:2px 0}
 
-  @media (max-width: 760px) {
-    .flow { grid-template-columns: 1fr; }
-    .flow-arrow { transform: rotate(90deg); }
-    .grid { grid-template-columns: 1fr; }
-    .track { grid-template-columns: 1fr; }
-    header { padding: 56px 0 28px; }
-  }
-  /* accessibility: no motion, full static frame */
-  @media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
-    .reveal { opacity: 1 !important; transform: none !important; }
-  }
+  footer{text-align:center;color:var(--dim);font-size:14px;margin-top:48px}
+  footer a{color:var(--blue);text-decoration:none}
+  .pid{font-family:'Geist Mono';color:var(--purple)}
+  .loading{color:var(--dim);text-align:center;padding:30px}
 </style>
 </head>
 <body>
+<div class="wrap">
+  <header>
+    <span class="badge">Sanity Challenge · Path One · Interactive demo</span>
+    <h1>Which AWS number is <span class="g">actually current?</span></h1>
+    <p class="sub">Pick a question. The agent pulls the real structured facts from Sanity, reconciles the conflict to one cited answer, and shows where the live AWS value has drifted.</p>
+  </header>
 
-<header>
-  <div class="wrap">
-    <p class="eyebrow reveal">Sanity Challenge · Path One · Knowledge Base + Context MCP</p>
-    <h1 class="reveal">The docs say one thing.<br />The console says another.<br /><em>Which is current?</em></h1>
-    <p class="lede reveal">An agent that only works <b>because</b> the content is structured. It reconciles conflicting AWS facts to a single cited answer using source precedence, then checks the live AWS API and honestly reports when even the reconciled record has drifted. A keyword search cannot do this.</p>
-    <div class="meta reveal">
-      <span class="chip">Sanity project <b>0q5ohtvv</b></span>
-      <span class="chip">dataset <b>production</b> (public)</span>
-      <span class="chip">Amazon Nova Pro · Strands</span>
-      <span class="chip">read-only AWS · fail-closed</span>
+  <div class="note">
+    <b>About this demo.</b> The structured facts here are the real records from the public
+    Sanity dataset (project <span class="pid">0q5ohtvv</span>), reconciled in your browser with
+    the same source-precedence rule the agent uses. The <b>live AWS</b> column is <b>demo data
+    captured from a real read-only run on my account</b>: a browser cannot call your AWS account,
+    so those numbers are fixed snapshots, not live from you. The reconciliation you see is
+    recomputed on the fly every time you pick a question.
+  </div>
+
+  <div class="tool">
+    <div class="label">Ask a question</div>
+    <select id="q"></select>
+    <button class="runbtn" id="run">Reconcile &amp; check</button>
+
+    <div class="answer" id="answer">
+      <div class="verdict" id="verdict"></div>
+      <div class="claims" id="claims"></div>
+      <div class="why" id="why"></div>
+      <div class="live" id="live"></div>
+      <div class="trail" id="trail"></div>
     </div>
+    <div class="loading" id="loading">Loading real facts from the Sanity public dataset…</div>
   </div>
-</header>
 
-<section class="spine">
-  <div class="wrap">
-    <h2 class="reveal">One question, three numbers</h2>
-    <p class="sub reveal">The flagship case: the default On-Demand Standard vCPU quota in us-east-1. An old user-guide snapshot, the reconciled record, and the live account value all disagree.</p>
-    <div class="flow">
-      <div class="flow-step old reveal">
-        <span class="tag">Old doc snapshot</span>
-        <div class="big">32</div>
-        <div class="cap">EC2 user-guide snapshot — superseded</div>
-      </div>
-      <div class="flow-arrow reveal">→</div>
-      <div class="flow-step reconciled reveal">
-        <span class="tag">Reconciled from record</span>
-        <div class="big">5</div>
-        <div class="cap">Service Quotas console wins by source precedence</div>
-      </div>
-      <div class="flow-arrow reveal">→</div>
-      <div class="flow-step live reveal">
-        <span class="tag">Live AWS API</span>
-        <div class="big">16</div>
-        <div class="cap">GetServiceQuota — the record itself has drifted</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="facts">
-  <div class="wrap">
-    <div class="facts-head">
-      <h2 class="reveal">The Knowledge Base, reconciled</h2>
-      <span class="count reveal">5 structured facts · 2 drift · 2 agree · 1 unavailable</span>
-    </div>
-    <div class="grid" id="grid"></div>
-  </div>
-</section>
-
-<section class="trail">
-  <div class="wrap">
-    <h2 class="reveal">The agent's tool trail</h2>
-    <p class="sub reveal">Nova drove three tools in order. The deterministic reconcile and the read-only live check are what the model cannot fake; a fail-closed guard releases the answer only if the model's value matches the reconciled value.</p>
-    <div class="term reveal">
-      <div class="term-bar"><span></span><span></span><span></span></div>
-      <div class="term-body">
-        <div><span class="o">$</span> <span class="c">python -m agent.ask "current On-Demand Standard vCPU quota in us-east-1?"</span></div>
-        <div><span class="p">→</span> <span class="c">fetch_candidate_facts(service='EC2', fact_type='quota', region='us-east-1')</span> <span class="o">→ 1 row</span></div>
-        <div><span class="p">→</span> <span class="c">reconcile_facts(n=1, from last fetch)</span> <span class="o">→ current =</span> <span class="c">5</span> <span class="o">(console &gt; user-guide)</span></div>
-        <div><span class="p">→</span> <span class="c">verify_live(EC2/quota, L-1216C47A)</span> <span class="o">→</span> <span class="hl">drift: live = 16</span></div>
-        <div><span class="o">guard:</span> <span class="ok">TRUSTED</span> <span class="o">— model value 5 == reconciled 5; drift reported</span></div>
-        <div><span class="o">footer: reconciled 1 fact → current = 5; live AWS check = drift</span></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<footer>
-  <div class="wrap row">
-    <span>AWS Source of Truth · Sanity Challenge 2026 · Path One</span>
-    <span>project <b>0q5ohtvv</b> · <a href="https://github.com/simplynadaf" target="_blank" rel="noopener">github.com/simplynadaf</a></span>
-  </div>
-</footer>
+  <footer>
+    Sanity project <span class="pid">0q5ohtvv</span> ·
+    <a href="https://github.com/simplynadaf/aws-source-of-truth-agent">Code on GitHub</a> ·
+    Amazon Nova Pro + Strands + Sanity Context Knowledge Base
+  </footer>
+</div>
 
 <script>
-  // Real data from VERIFIED-nova-run.md + the seed dataset (project 0q5ohtvv).
-  const FACTS = [
-    {
-      flagship: true, svc: "EC2", title: "On-Demand Standard vCPU quota (us-east-1)",
-      doc: "32", rec: "5", live: "16", unit: "vCPUs", state: "drift",
-      sources: [
-        ["wins", "Service Quotas console (L-1216C47A)", "https://console.aws.amazon.com/servicequotas/home/services/ec2/quotas/L-1216C47A"],
-        ["superseded", "Older EC2 user-guide snapshot (shows 32)", "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html"],
-        ["live", "GetServiceQuota → 16 (account-dependent; record is stale)", ""]
-      ]
-    },
-    {
-      svc: "Lambda", title: "Default concurrent executions (us-east-1)",
-      rec: "1000", live: "—", unit: "concurrent", state: "unknown", single: true,
-      sources: [
-        ["wins", "Lambda Developer Guide — quotas", "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html"],
-        ["live", "Clean single source, no conflict; live value unavailable this run", ""]
-      ]
-    },
-    {
-      svc: "S3", title: "S3 Standard storage price /GB-mo (us-east-1)",
-      doc: "0.021", rec: "0.023", live: "0.023", unit: "USD/GB-mo", state: "agree",
-      sources: [
-        ["wins", "Amazon S3 pricing page", "https://aws.amazon.com/s3/pricing/"],
-        ["superseded", "Stale third-party cost blog (shows 0.021)", ""],
-        ["live", "AWS Price List API → 0.023 (agrees)", ""]
-      ]
-    },
-    {
-      svc: "RDS", title: "PostgreSQL oldest supported major version",
-      doc: "11", rec: "13", live: "11", unit: "major version", state: "drift",
-      sources: [
-        ["wins", "RDS for PostgreSQL release notes", "https://docs.aws.amazon.com/AmazonRDS/latest/PostgreSQLReleaseNotes/"],
-        ["superseded", "Older getting-started tutorial (shows 11)", "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_GettingStarted.html"],
-        ["live", "DescribeDBEngineVersions → 11 present (drift from record floor 13)", ""]
-      ]
-    },
-    {
-      svc: "EC2", title: "Graviton4 (R8g) availability (us-east-1)",
-      rec: "Available", live: "Available", unit: "", state: "agree", single: true,
-      sources: [
-        ["wins", "EC2 instance types by region", "https://aws.amazon.com/ec2/instance-types/"],
-        ["live", "DescribeInstanceTypeOfferings (r8g) → Available (agrees)", ""]
-      ]
-    }
-  ];
+// ---- source precedence: mirrors agent/reconcile.py ----
+const PREC = { serviceQuotasConsole:5, pricingPage:5, changelog:4, officialDocs:3, blog:1 };
 
-  const liveClass = { drift: "d", agree: "a", unknown: "u" };
-  const grid = document.getElementById("grid");
+// ---- live AWS results, captured from a real read-only run (see VERIFIED docs) ----
+// browser can't call AWS; these are fixed snapshots, clearly labelled in the UI.
+const LIVE = {
+  "EC2|quota":   { status:"drift", value:"16", detail:"Service Quotas ec2/L-1216C47A = 16" },
+  "S3|price":    { status:"agree", value:"0.023", detail:"Price List API: S3 Standard = 0.023 USD/GB-mo" },
+  "EC2|regionalAvailability": { status:"agree", value:"Available", detail:"EC2 DescribeInstanceTypeOfferings r8g in us-east-1: Available" },
+  "RDS|versionSupport": { status:"drift", value:"11", detail:"Oldest available RDS PostgreSQL major = 11" },
+  "Lambda|limit": { status:"unavailable", value:null, detail:"No Service Quotas mapping wired for this fact" },
+  "EBS|limit":   { status:"unavailable", value:null, detail:"No per-volume gp3 IOPS quota exists in Service Quotas" },
+};
 
-  FACTS.forEach(f => {
-    const el = document.createElement("div");
-    el.className = "fact reveal" + (f.flagship ? " flagship" : "");
-    const stateLabel = f.state === "drift" ? "Drift" : f.state === "agree" ? "Agree" : "Unavailable";
+const EMBEDDED = [{"currentValue":"80000","effectiveDate":"2026-01-15","factType":"limit","key":"Maximum provisioned IOPS per gp3 volume","quotaCode":null,"region":"us-east-1","service":"EBS","source":{"kind":"serviceQuotasConsole","name":"Amazon EBS gp3 volume limits (Service Quotas / EBS console)","url":"https://console.aws.amazon.com/servicequotas/home/services/ebs/quotas"},"supersedes":null,"unit":"IOPS"},{"currentValue":"16000","effectiveDate":"2020-01-01","factType":"limit","key":"Maximum IOPS per volume for a general purpose SSD EBS volume","quotaCode":null,"region":"us-east-1","service":"EBS","source":{"kind":"officialDocs","name":"Older general purpose SSD storage guide: maximum IOPS per volume for a general purpose SSD EBS volume","url":"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html"},"supersedes":null,"unit":"IOPS"},{"currentValue":"Available","effectiveDate":"2026-03-01","factType":"regionalAvailability","key":"Graviton4 (R8g) instance availability","quotaCode":null,"region":"us-east-1","service":"EC2","source":{"kind":"officialDocs","name":"Amazon EC2 instance types by region","url":"https://aws.amazon.com/ec2/instance-types/"},"supersedes":null,"unit":""},{"currentValue":"5","effectiveDate":"2026-06-01","factType":"quota","key":"Running On-Demand Standard (A, C, D, H, I, M, R, T, Z) instances","quotaCode":"L-1216C47A","region":"us-east-1","service":"EC2","source":{"kind":"serviceQuotasConsole","name":"Service Quotas console","url":"https://console.aws.amazon.com/servicequotas/home/services/ec2/quotas/L-1216C47A"},"supersedes":{"reason":"New accounts now start at a lower default and request increases; the Service Quotas console reflects the live per-account value, an older static doc snapshot does not.","stillShownBy":"An older EC2 user-guide snapshot","stillShownUrl":"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html","value":"32"},"unit":"vCPUs"},{"currentValue":"32","effectiveDate":"2023-01-01","factType":"quota","key":"Running On-Demand Standard (A, C, D, H, I, M, R, T, Z) instances","quotaCode":"L-1216C47A","region":"us-east-1","service":"EC2","source":{"kind":"officialDocs","name":"Amazon EC2 User Guide - resource limits (older snapshot)","url":"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html"},"supersedes":null,"unit":"vCPUs"},{"currentValue":"1000","effectiveDate":"2024-01-01","factType":"limit","key":"Default account concurrent executions","quotaCode":"L-B99A9384","region":"us-east-1","service":"Lambda","source":{"kind":"officialDocs","name":"Lambda Developer Guide - quotas","url":"https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html"},"supersedes":null,"unit":"concurrent executions"},{"currentValue":"13","effectiveDate":"2026-02-01","factType":"versionSupport","key":"Amazon RDS for PostgreSQL - oldest supported major version","quotaCode":null,"region":"us-east-1","service":"RDS","source":{"kind":"changelog","name":"RDS for PostgreSQL release notes","url":"https://docs.aws.amazon.com/AmazonRDS/latest/PostgreSQLReleaseNotes/"},"supersedes":{"reason":"Older major versions reached end of standard support; the release notes track the current supported floor, an un-updated tutorial does not.","stillShownBy":"An older getting-started tutorial","stillShownUrl":"https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_GettingStarted.html","value":"11"},"unit":"major version"},{"currentValue":"0.023","effectiveDate":"2025-01-01","factType":"price","key":"S3 Standard storage, first 50 TB / month","quotaCode":null,"region":"us-east-1","service":"S3","source":{"kind":"pricingPage","name":"Amazon S3 pricing page","url":"https://aws.amazon.com/s3/pricing/"},"supersedes":{"reason":"The official S3 pricing page is authoritative and current; a years-old third-party blog snapshot is not.","stillShownBy":"A stale third-party cost blog (illustrative, no canonical link)","stillShownUrl":"","value":"0.021"},"unit":"USD per GB-month"}];
+const QUERY = '*[_type=="awsFact"]{service,factType,key,currentValue,unit,region,effectiveDate,source,supersedes,quotaCode}';
+const URL = 'https://0q5ohtvv.api.sanity.io/v2021-06-07/data/query/production?query=' + encodeURIComponent(QUERY);
 
-    let track;
-    if (f.single) {
-      track = `
-        <div class="track" style="grid-template-columns:1fr 1fr">
-          <div class="cell rec"><div class="lab">Reconciled</div><div class="val">${f.rec}</div><div class="unit">${f.unit}</div></div>
-          <div class="cell liv"><div class="lab">Live AWS</div><div class="val ${liveClass[f.state]}">${f.live}</div><div class="unit">${f.unit}</div></div>
-        </div>`;
-    } else {
-      track = `
-        <div class="track">
-          <div class="cell doc"><div class="lab">Old doc</div><div class="val">${f.doc}</div><div class="unit">${f.unit}</div></div>
-          <div class="cell rec"><div class="lab">Reconciled</div><div class="val">${f.rec}</div><div class="unit">${f.unit}</div></div>
-          <div class="cell liv"><div class="lab">Live AWS</div><div class="val ${liveClass[f.state]}">${f.live}</div><div class="unit">${f.unit}</div></div>
-        </div>`;
-    }
+let GROUPS = {}; // "SERVICE|factType" -> [facts]
 
-    const sources = f.sources.map(([k, name, url]) => `
-      <div class="src-row"><span class="k">${k}</span>${url ? `<a href="${url}" target="_blank" rel="noopener">${name}</a>` : `<span>${name}</span>`}</div>
-    `).join("");
+function precedence(f){ return PREC[f.source && f.source.kind] || 0; }
+function parseDate(s){ return s ? new Date(s).getTime() : 0; }
 
-    el.innerHTML = `
-      <div class="fact-top">
-        <span class="svc">${f.svc}</span>
-        <span class="state ${f.state}">${stateLabel}</span>
-      </div>
-      <h3>${f.title}</h3>
-      ${track}
-      <div class="sources">${sources}</div>
-    `;
-    grid.appendChild(el);
+function reconcile(facts){
+  const ordered = [...facts].sort((a,b)=>{
+    const p = precedence(b)-precedence(a);
+    return p !== 0 ? p : parseDate(b.effectiveDate)-parseDate(a.effectiveDate);
   });
+  const win = ordered[0];
+  let old = null;
+  for(const f of ordered.slice(1)){ if(f.currentValue !== win.currentValue){ old = f; break; } }
+  return { win, old, considered: facts.length };
+}
 
-  // Motion — enhancement only. Static frame already meaningful; reduced-motion shows all.
-  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (!reduced && window.gsap) {
-    document.documentElement.classList.add("js-motion");
-    gsap.registerPlugin(ScrollTrigger);
-    gsap.set(".reveal", { opacity: 0, y: 16 });
-    gsap.set(".term.reveal", { y: 0 });   // terminal fades only, never slides (avoids text smear)
-    gsap.utils.toArray(".reveal").forEach((elm) => {
-      const isTerm = elm.classList.contains("term");
-      gsap.to(elm, {
-        opacity: 1, y: 0, duration: isTerm ? 0.5 : 0.6, ease: "power3.out",
-        scrollTrigger: { trigger: elm, start: "top 92%" }
-      });
-    });
-    // header items are above the fold — reveal immediately, not on scroll
-    gsap.to("header .reveal", { opacity: 1, y: 0, duration: 0.7, stagger: 0.09, ease: "power3.out", delay: 0.1, overwrite: true });
+const QUESTIONS = {
+  "EC2|quota": "What is the current On-Demand Standard vCPU quota in us-east-1?",
+  "EBS|limit": "What is the max IOPS per volume for a gp3 EBS volume?",
+  "S3|price": "What is the current S3 Standard storage price per GB in us-east-1?",
+  "RDS|versionSupport": "What is the oldest supported RDS PostgreSQL major version?",
+  "Lambda|limit": "What is the Lambda concurrent executions limit?",
+  "EC2|regionalAvailability": "Is the R8g Graviton family available in us-east-1?",
+};
+
+function groupFacts(list){
+  GROUPS = {};
+  for(const f of list){ const key=f.service+"|"+f.factType; (GROUPS[key]=GROUPS[key]||[]).push(f); }
+}
+async function load(){
+  let list = null;
+  try{
+    const res = await fetch(URL, {mode:"cors"});
+    if(res.ok){ const data = await res.json(); if(data.result && data.result.length) list = data.result; }
+  }catch(e){ /* CORS or offline: fall back to the embedded snapshot */ }
+  if(!list){ list = EMBEDDED; }
+  groupFacts(list);
+  const sel = document.getElementById('q');
+  for(const key of Object.keys(QUESTIONS)){
+    if(GROUPS[key]){
+      const o = document.createElement('option');
+      o.value = key; o.textContent = QUESTIONS[key];
+      sel.appendChild(o);
+    }
   }
-  // If JS is off or reduced-motion, CSS already leaves everything visible.
+  document.getElementById('loading').style.display = 'none';
+}
+
+function esc(s){ return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+function run(){
+  const key = document.getElementById('q').value;
+  const facts = GROUPS[key] || [];
+  if(!facts.length) return;
+  const { win, old, considered } = reconcile(facts);
+  const live = LIVE[key] || { status:"unavailable", value:null, detail:"no mapping" };
+  const unit = win.unit ? ' ' + win.unit : '';
+
+  // verdict
+  const v = document.getElementById('verdict');
+  if(live.status === 'drift' && live.value != null){
+    v.className = 'verdict v-drift';
+    v.innerHTML = `The record says <span class="num">${esc(win.currentValue)}${unit}</span>, but live AWS reports <span class="num">${esc(live.value)}</span> right now. This account has drifted from the recorded value.`;
+  } else if(live.status === 'agree'){
+    v.className = 'verdict v-agree';
+    v.innerHTML = `Current value: <span class="num">${esc(win.currentValue)}${unit}</span>. Live AWS agrees.`;
+  } else {
+    v.className = 'verdict v-unk';
+    v.innerHTML = `Current value: <span class="num">${esc(win.currentValue)}${unit}</span>. Live AWS check unavailable for this fact.`;
+  }
+
+  // claims
+  const claims = document.getElementById('claims');
+  let html = `<div class="claim win"><span class="tag tag-win">Current</span>
+    <div class="val">${esc(win.currentValue)}${unit}</div>
+    <div class="meta">${esc(win.source.name)}<br><a href="${esc(win.source.url)}" target="_blank" rel="noopener">${esc(win.source.url)}</a><br>effective ${esc(win.effectiveDate||'n/a')} · ${esc(win.source.kind)}</div></div>`;
+  if(old){
+    html += `<div class="claim old"><span class="tag tag-old">Superseded</span>
+      <div class="val">${esc(old.currentValue)}${old.unit?(' '+esc(old.unit)):''}</div>
+      <div class="meta">${esc(old.source.name)}<br><a href="${esc(old.source.url)}" target="_blank" rel="noopener">${esc(old.source.url)}</a><br>effective ${esc(old.effectiveDate||'n/a')} · ${esc(old.source.kind)}</div></div>`;
+  }
+  claims.innerHTML = html;
+
+  // why
+  const why = document.getElementById('why');
+  if(old){
+    why.style.display = 'block';
+    why.innerHTML = `<b>Why the current one wins:</b> ${esc(win.source.kind)} outranks ${esc(old.source.kind)} by source precedence` +
+      (parseDate(win.effectiveDate) >= parseDate(old.effectiveDate) ? `, and it is newer (${esc(win.effectiveDate)} vs ${esc(old.effectiveDate)}).` : `.`) +
+      ` A keyword search over the same text can rank the stale value first; this rule does not.`;
+  } else { why.style.display = 'none'; }
+
+  // live panel
+  const lv = document.getElementById('live');
+  const pillClass = live.status==='drift'?'p-drift':live.status==='agree'?'p-agree':'p-unk';
+  lv.innerHTML = `<div class="h">Live AWS cross-check (read-only · demo snapshot)</div>
+    <span class="pill ${pillClass}">${live.status.toUpperCase()}</span>
+    <span style="color:var(--dim);font-size:14px;margin-left:8px">${esc(live.detail)}</span>`;
+
+  // tool trail
+  const t = document.getElementById('trail');
+  const region = win.region || 'us-east-1';
+  const pathGuess = key.split('|')[0].toLowerCase() + '/' + (key.split('|')[1]==='price'?'pricing':key.split('|')[1]==='versionSupport'?'version_support':key.split('|')[1]==='regionalAvailability'?'regional_availability':'quotas_and_limits');
+  t.innerHTML =
+    `<div class="step"><span class="k">[Sanity Context MCP]</span> knowledge_base_search(...) -&gt; top='${pathGuess}'; knowledge_base_read(['${pathGuess}'])</div>` +
+    `<div class="step">fetch_candidate_facts(service='${key.split('|')[0]}', region='${region}') -&gt; <span class="n">${considered}</span> rows</div>` +
+    `<div class="step">reconcile_facts(n=<span class="n">${considered}</span>) -&gt; current=<span class="n">${esc(win.currentValue)}</span></div>` +
+    `<div class="step">verify_live(...) -&gt; ${esc(live.status)}</div>`;
+
+  document.getElementById('answer').classList.add('show');
+}
+
+document.getElementById('run').addEventListener('click', run);
+document.getElementById('q').addEventListener('change', run);
+load();
 </script>
 </body>
 </html>
