@@ -187,6 +187,8 @@ def _clean_model_text(text: str) -> str:
     answer prose.
     """
     cleaned = re.sub(r"(?is)<thinking>.*?</thinking>", "", text or "")
+    # Nova also sometimes wraps the reply in <answer>...</answer>; unwrap it.
+    cleaned = re.sub(r"(?is)</?answer>", "", cleaned)
     return cleaned.strip()
 
 
