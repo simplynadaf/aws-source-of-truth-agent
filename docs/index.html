@@ -133,17 +133,60 @@
   footer{text-align:center;color:var(--dim);font-size:14px;margin-top:52px}
   footer a{color:var(--blue);text-decoration:none}
   .pid{font-family:'Geist Mono';color:var(--purple)}
+
+  /* ---- narrative story scenes ---- */
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+  .story{margin-top:64px}
+  .story h2{font-size:clamp(24px,3.6vw,34px);font-weight:700;letter-spacing:-.02em;text-align:center}
+  .story .lead{color:var(--dim);font-size:17px;max-width:620px;margin:14px auto 0;text-align:center}
+  .three{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:14px;align-items:center;margin-top:34px}
+  @media(max-width:720px){.three{grid-template-columns:1fr;gap:12px}.three .arrow{display:none}}
+  .ncard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;text-align:center}
+  .ncard .lab{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+  .ncard .big{font-family:'Geist Mono';font-size:40px;font-weight:700;margin:8px 0 6px}
+  .ncard .cap{font-size:12.5px;color:var(--dim)}
+  .ncard.old .big{color:var(--red)} .ncard.rec .big{color:var(--green)} .ncard.live .big{color:var(--amber)}
+  .ncard.old{opacity:.82}
+  .arrow{color:var(--purple);font-size:22px;text-align:center}
+  .scrolltip{text-align:center;color:var(--dim);font-size:13px;margin-top:40px;letter-spacing:.04em}
+
+  .divider{height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent);margin:64px 0 0}
+  .try-h{text-align:center;margin-top:56px}
+  .try-h .k{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--purple)}
+  .try-h h2{font-size:clamp(24px,3.6vw,32px);font-weight:700;margin-top:10px;letter-spacing:-.02em}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <span class="badge">Sanity Challenge · Path One · live demo</span>
-    <h1>Which AWS number is <span class="g">actually current?</span></h1>
-    <p class="sub">Ask the agent. It pulls the structured facts from Sanity, reconciles the conflict to one cited answer, then checks where the live AWS value has drifted.</p>
+    <span class="badge">Sanity Challenge · Path One · Knowledge Base + Context MCP</span>
+    <h1>The docs say one thing.<br>The console says another.<br><span class="g">Which is current?</span></h1>
+    <p class="sub">An agent that only works because the content is structured. It reconciles conflicting AWS facts to a single cited answer using source precedence, then checks the live AWS API and reports when even the reconciled record has drifted. A keyword search cannot do this.</p>
   </header>
 
-  <div class="note">
+  <!-- narrative scene: one question, three numbers -->
+  <section class="story reveal">
+    <h2>One question, three numbers</h2>
+    <p class="lead">The flagship case: the default On-Demand Standard vCPU quota in us-east-1. An old user-guide snapshot, the reconciled record, and the live account value all disagree.</p>
+    <div class="three">
+      <div class="ncard old"><div class="lab">Old doc snapshot</div><div class="big">32</div><div class="cap">EC2 user-guide snapshot, superseded</div></div>
+      <div class="arrow">&rarr;</div>
+      <div class="ncard rec"><div class="lab">Reconciled from record</div><div class="big">5</div><div class="cap">Service Quotas console wins by source precedence</div></div>
+      <div class="arrow">&rarr;</div>
+      <div class="ncard live"><div class="lab">Live AWS API</div><div class="big">16</div><div class="cap">GetServiceQuota, the record itself has drifted</div></div>
+    </div>
+    <p class="scrolltip reveal">Now ask it yourself &darr;</p>
+  </section>
+
+  <div class="divider"></div>
+
+  <div class="try-h reveal">
+    <div class="k">Live demo</div>
+    <h2>Ask the agent</h2>
+  </div>
+
+  <div class="note reveal">
     <b>Demo with sample data</b> so you can see how it works with zero setup. The facts mirror the
     real records in the Sanity dataset (project <span class="pid">0q5ohtvv</span>) and are reconciled
     in your browser with the same rule the agent uses. The <b>live AWS</b> results are captured from a
@@ -151,7 +194,7 @@
     agent from the <a href="https://github.com/simplynadaf/aws-source-of-truth-agent">repo</a> to check your own.
   </div>
 
-  <div class="promptbar">
+  <div class="promptbar reveal">
     <div class="pwrap">
       <span class="chev">&gt;_</span>
       <input id="prompt" autocomplete="off" placeholder="Ask about an AWS quota, limit, price, or version..." />
@@ -332,6 +375,13 @@ async function ask(forcedKey){
   await typeInto(v, vtext, 12);   // stream the verdict last, like the agent "speaking"
   running=false;
 }
+
+/* scroll-reveal for the narrative scenes */
+const io=new IntersectionObserver((es)=>{
+  es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+},{threshold:.15});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
 </script>
 </body>
 </html>
