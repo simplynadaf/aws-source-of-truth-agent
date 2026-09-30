@@ -65,19 +65,20 @@ Here is the uncomfortable part: right now, for the same fact, three official-loo
 
 The challenge sets a specific bar: *"the strongest submissions show an agent that only works because the content was structured. If a keyword search would have gotten you the same answer, aim higher."*
 
-So we did not just claim keyword search fails, we shipped it. Here is a TF-IDF search over the same source text, asked for the **current standard vCPU quota**:
+So we did not just claim keyword search fails, we built a fact where it returns the **wrong** answer. Asked for the *maximum IOPS per volume for a general purpose SSD*, a TF-IDF keyword search ranks the **stale 16,000** (the old gp2 ceiling, keyword-dense in an older doc) above the current **80,000** (gp3, from the Service Quotas console):
 
 ```text
-Keyword/TF-IDF baseline for: "current standard vCPU quota"
+Keyword/TF-IDF baseline for: "maximum IOPS per volume general purpose SSD"
 
-  0.0849  S3/price:  S3 Standard storage ... = 0.023  (also carries an older value: 0.021)
-  0.0651  EC2/quota: Running On-Demand Standard ... = 5 (also carries an older value: 32)
-  0.0563  RDS/versionSupport: PostgreSQL oldest major = 13 (also carries an older value: 11)
-  0.0000  Lambda/limit: Default concurrent executions = 1000
-  0.0000  EC2/regionalAvailability: Graviton4 (R8g) = Available
+  0.8626  EBS/limit: Maximum IOPS per volume for a general purpose SSD = 16000   <-- WRONG (old)
+  0.2026  EBS/limit: Maximum provisioned IOPS per gp3 volume            = 80000   <-- right, ranked lower
+  0.0218  S3/price:  S3 Standard storage, first 50 TB / month           = 0.023
+  0.0185  EC2/quota: Running On-Demand Standard ...                      = 5
 ```
 
-Look at the top result. We asked about **vCPU quota** and keyword overlap ranked an **S3 price** first. Worse, the row we actually wanted carries *two* numbers (5 and 32) and the baseline has no idea which is current or that they contradict. It returns rows. It does not reconcile them. That is the hard part, and it is real. Ship the control yourself: `python -m agent.baseline "current standard vCPU quota"`.
+Keyword overlap hands you the wrong number with confidence. It returns rows; it does not reconcile them. That is the hard part, and it is real. Ship the control yourself: `python -m agent.baseline "maximum IOPS per volume general purpose SSD"`.
+
+![Keyword search ranks the wrong answer first](docs/screenshots/keyword-trap.png)
 
 ---
 
@@ -106,7 +107,11 @@ Because `source.kind`, `effectiveDate`, and `supersedes` are **typed fields**, t
 
 > **source precedence** (console / pricing page > changelog > official docs > blog), then **most recent `effectiveDate`** as the tie-breaker.
 
-A flat document could not do this. The content model *is* the feature. In the Sanity Knowledge Base build, that same conflict surfaces as an **Issue** (32 vs 5) you resolve once, and the resolution becomes a standing instruction the agent reads.
+A flat document could not do this. The content model *is* the feature. These typed facts are indexed into a **Sanity Context Knowledge Base**: a build reads them ahead of time and writes cited entries that keep the current and superseded value side by side with their sources. The agent retrieves them over the hosted **Context MCP** (`knowledge_base_search` + `knowledge_base_read`).
+
+![The Knowledge Base in the Sanity Context dashboard](docs/screenshots/kb-overview.png)
+
+![A reconciled entry: current vs superseded, with sources](docs/screenshots/kb-entry-ec2.png)
 
 ---
 
@@ -114,17 +119,20 @@ A flat document could not do this. The content model *is* the feature. In the Sa
 
 Reconciling recorded sources gives you the best answer *the documents* can offer. But documents rot. So the agent takes one more step a pure content agent cannot: it asks the **live authoritative AWS API**, read-only Service Quotas, the Price List API, EC2, RDS, whether the reconciled value is still true.
 
-Here is the real run across all five facts (Nova Pro, us-east-1, read-only throughout):
+Here is the real run across the facts (Nova Pro, us-east-1, read-only throughout):
 
 | Fact | Reconciled (from the record) | Superseded | Live AWS | Result |
 |------|------------------------------|-----------|----------|--------|
 | EC2 On-Demand Standard vCPU quota | **5** (console) | 32 (old user guide) | **16** | 🟠 DRIFT |
-| Lambda concurrent executions | 1000 (dev guide) | — | unavailable | ✅ trusted |
+| EBS gp3 max IOPS per volume | **80,000** (console) | 16,000 (old SSD guide) | unavailable | ✅ trusted |
 | S3 Standard $/GB-mo | 0.023 (pricing page) | 0.021 (stale blog) | 0.023 | 🟢 AGREE |
 | RDS PostgreSQL oldest major | **13** (release notes) | 11 (old tutorial) | **11** | 🟠 DRIFT |
+| Lambda concurrent executions | 1000 (dev guide) | — | unavailable | ✅ trusted |
 | Graviton4 (R8g) availability | Available (instance types) | — | Available | 🟢 AGREE |
 
 Read the EC2 row left to right: the docs say **32**, the record reconciles to **5**, and the live account quota is actually **16**. *Three different numbers, and the agent shows you all three and where each came from,* instead of confidently handing you one wrong one. The drift is not a bug. It is the honest answer: here is the current record, and here is where reality has already moved past it.
+
+![The agent shows all three numbers and reports the live drift](docs/screenshots/ec2-drift.png)
 
 ---
 
