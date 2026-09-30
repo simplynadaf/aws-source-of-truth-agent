@@ -103,12 +103,13 @@
   </header>
 
   <div class="note">
-    <b>About this demo.</b> The structured facts here are the real records from the public
-    Sanity dataset (project <span class="pid">0q5ohtvv</span>), reconciled in your browser with
-    the same source-precedence rule the agent uses. The <b>live AWS</b> column is <b>demo data
-    captured from a real read-only run on my account</b>: a browser cannot call your AWS account,
-    so those numbers are fixed snapshots, not live from you. The reconciliation you see is
-    recomputed on the fly every time you pick a question.
+    <b>This is a demo with sample data</b>, so you can see how the agent works without any setup.
+    The facts mirror the real records in the Sanity dataset (project <span class="pid">0q5ohtvv</span>)
+    and are reconciled in your browser with the same source-precedence rule the agent uses. The
+    <b>live AWS</b> column shows results captured from a real read-only run; a browser cannot call
+    an AWS account, so those numbers are fixed examples. Run the real agent from the
+    <a href="https://github.com/simplynadaf/aws-source-of-truth-agent" style="color:inherit;text-decoration:underline">repo</a>
+    to check your own account.
   </div>
 
   <div class="tool">
@@ -149,8 +150,8 @@ const LIVE = {
 };
 
 const EMBEDDED = [{"currentValue":"80000","effectiveDate":"2026-01-15","factType":"limit","key":"Maximum provisioned IOPS per gp3 volume","quotaCode":null,"region":"us-east-1","service":"EBS","source":{"kind":"serviceQuotasConsole","name":"Amazon EBS gp3 volume limits (Service Quotas / EBS console)","url":"https://console.aws.amazon.com/servicequotas/home/services/ebs/quotas"},"supersedes":null,"unit":"IOPS"},{"currentValue":"16000","effectiveDate":"2020-01-01","factType":"limit","key":"Maximum IOPS per volume for a general purpose SSD EBS volume","quotaCode":null,"region":"us-east-1","service":"EBS","source":{"kind":"officialDocs","name":"Older general purpose SSD storage guide: maximum IOPS per volume for a general purpose SSD EBS volume","url":"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html"},"supersedes":null,"unit":"IOPS"},{"currentValue":"Available","effectiveDate":"2026-03-01","factType":"regionalAvailability","key":"Graviton4 (R8g) instance availability","quotaCode":null,"region":"us-east-1","service":"EC2","source":{"kind":"officialDocs","name":"Amazon EC2 instance types by region","url":"https://aws.amazon.com/ec2/instance-types/"},"supersedes":null,"unit":""},{"currentValue":"5","effectiveDate":"2026-06-01","factType":"quota","key":"Running On-Demand Standard (A, C, D, H, I, M, R, T, Z) instances","quotaCode":"L-1216C47A","region":"us-east-1","service":"EC2","source":{"kind":"serviceQuotasConsole","name":"Service Quotas console","url":"https://console.aws.amazon.com/servicequotas/home/services/ec2/quotas/L-1216C47A"},"supersedes":{"reason":"New accounts now start at a lower default and request increases; the Service Quotas console reflects the live per-account value, an older static doc snapshot does not.","stillShownBy":"An older EC2 user-guide snapshot","stillShownUrl":"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html","value":"32"},"unit":"vCPUs"},{"currentValue":"32","effectiveDate":"2023-01-01","factType":"quota","key":"Running On-Demand Standard (A, C, D, H, I, M, R, T, Z) instances","quotaCode":"L-1216C47A","region":"us-east-1","service":"EC2","source":{"kind":"officialDocs","name":"Amazon EC2 User Guide - resource limits (older snapshot)","url":"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html"},"supersedes":null,"unit":"vCPUs"},{"currentValue":"1000","effectiveDate":"2024-01-01","factType":"limit","key":"Default account concurrent executions","quotaCode":"L-B99A9384","region":"us-east-1","service":"Lambda","source":{"kind":"officialDocs","name":"Lambda Developer Guide - quotas","url":"https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html"},"supersedes":null,"unit":"concurrent executions"},{"currentValue":"13","effectiveDate":"2026-02-01","factType":"versionSupport","key":"Amazon RDS for PostgreSQL - oldest supported major version","quotaCode":null,"region":"us-east-1","service":"RDS","source":{"kind":"changelog","name":"RDS for PostgreSQL release notes","url":"https://docs.aws.amazon.com/AmazonRDS/latest/PostgreSQLReleaseNotes/"},"supersedes":{"reason":"Older major versions reached end of standard support; the release notes track the current supported floor, an un-updated tutorial does not.","stillShownBy":"An older getting-started tutorial","stillShownUrl":"https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_GettingStarted.html","value":"11"},"unit":"major version"},{"currentValue":"0.023","effectiveDate":"2025-01-01","factType":"price","key":"S3 Standard storage, first 50 TB / month","quotaCode":null,"region":"us-east-1","service":"S3","source":{"kind":"pricingPage","name":"Amazon S3 pricing page","url":"https://aws.amazon.com/s3/pricing/"},"supersedes":{"reason":"The official S3 pricing page is authoritative and current; a years-old third-party blog snapshot is not.","stillShownBy":"A stale third-party cost blog (illustrative, no canonical link)","stillShownUrl":"","value":"0.021"},"unit":"USD per GB-month"}];
-const QUERY = '*[_type=="awsFact"]{service,factType,key,currentValue,unit,region,effectiveDate,source,supersedes,quotaCode}';
-const URL = 'https://0q5ohtvv.api.sanity.io/v2021-06-07/data/query/production?query=' + encodeURIComponent(QUERY);
+const QUERY = '*[_type=="awsFact"]{service,factType,key,currentValue,unit,region,effectiveDate,source,supersedes,quotaCode}'; // for reference; the live agent runs this
+
 
 let GROUPS = {}; // "SERVICE|factType" -> [facts]
 
@@ -182,13 +183,9 @@ function groupFacts(list){
   for(const f of list){ const key=f.service+"|"+f.factType; (GROUPS[key]=GROUPS[key]||[]).push(f); }
 }
 async function load(){
-  let list = null;
-  try{
-    const res = await fetch(URL, {mode:"cors"});
-    if(res.ok){ const data = await res.json(); if(data.result && data.result.length) list = data.result; }
-  }catch(e){ /* CORS or offline: fall back to the embedded snapshot */ }
-  if(!list){ list = EMBEDDED; }
-  groupFacts(list);
+  // Demo data only: the facts below are a snapshot of the public Sanity dataset,
+  // reconciled in-browser. No network call, so the demo always works offline.
+  groupFacts(EMBEDDED);
   const sel = document.getElementById('q');
   for(const key of Object.keys(QUESTIONS)){
     if(GROUPS[key]){
